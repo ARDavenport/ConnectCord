@@ -4,6 +4,7 @@ import express from "express"; // import express
 // have one for connecting and disconnecting from database
 
 // Import Routes
+import authRoutes from "./routes/authRoutes.js"; // import routes for authorization
 
 // connect to database
 config();
@@ -13,8 +14,11 @@ config();
 const app = express(); // create a variable to put express in it as a middleware
 
 // Middlewares
+app.use(cors());
+app.use(express.json());
 
 // API Routes
+app.use("/auth", authRoutes); // authorization routes
 
 
 // Listen on port
