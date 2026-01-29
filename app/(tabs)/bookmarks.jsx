@@ -3,8 +3,13 @@ import React from 'react'
 
 const bookmarks = () => {
   return (
-    <View>
-      <Text>bookmarks</Text>
+    <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+      <Text>Your bookmarks will appear here! 🎉</Text>
     </View>
   )
 }
