@@ -31,7 +31,7 @@ const login = () => {
 
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? {''}
+          <Text style={styles.footerText}>Already have an account?{''}
           <Link href="/signinPage" asChild>
             <Text style={styles.footerLink}>Sign In</Text>
           </Link>
