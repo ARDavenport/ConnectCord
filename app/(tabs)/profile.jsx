@@ -3,8 +3,13 @@ import React from 'react'
 
 export default function profile() {
   return (
-    <View>
-      <Text>profile</Text>
+    <View
+      style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+      <Text>Your profile will appear here! 🎉</Text>
     </View>
   )
 }
