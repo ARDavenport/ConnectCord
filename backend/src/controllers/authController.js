@@ -4,10 +4,10 @@ import connection from "../config/db.js";
 
 const register = async (req, res) =>  {
     
-    const {userID, firstName, middleName, lastName, email, passwords, phoneNumber, roles, city, state, createdAt} = req.body;
+    const {userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, state, createdAt} = req.body;
 
     // validate input
-    if (!firstName || !lastName || !email || !passwords || !phoneNumber || !roles || !city || !state || !createdAt) {
+    if (!firstName || !lastName || !email || !passwords || !phoneNumber || !city || !state || !createdAt) {
         return res.status(400).json({ message: "Please provide all required fields" });
     }
 
@@ -23,8 +23,8 @@ const register = async (req, res) =>  {
 
     // insert user into database
     await connection.execute(
-        'INSERT INTO Users (userID, firstName, middleName, lastName, email, passwords, phoneNumber, roles, city, state, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [userID, firstName, middleName, lastName, email, hashedPassword, phoneNumber, roles, city, state, createdAt]
+        'INSERT INTO Users (userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, state, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [userID, firstName, middleName, lastName, email, hashedPassword, phoneNumber, city, state, createdAt]
     );
 
     // generate JWT token
@@ -40,7 +40,6 @@ const register = async (req, res) =>  {
             lastName,
             email,
             phoneNumber,
-            roles,
             city,
             state,
             token
