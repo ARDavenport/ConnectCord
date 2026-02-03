@@ -32,7 +32,7 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Marker Felt',
     marginBottom: 20,
-    color: COLORS.white
+    color: '#AAA'
   },
   
 
