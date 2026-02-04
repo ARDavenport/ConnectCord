@@ -1,22 +1,93 @@
+// Wifi.h allows the ESP32 device to connect to an online WiFi network
+// WebServer.h allows the ESP32 to host a lightweight HTTP server
+// ESPmDNS allows the HTTP server to be found using a common Domain Name instead of an IP
 #include <WiFi.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
 
-const char* ssid = "YOUR_WIFI_NAME";
-const char* password = "YOUR_WIFI_PASSWORD";
+// -------- CONFIG --------
+const char* ssid = "Redacted";
+const char* password = "Redacted";
+const char* strMdnsName = "connectcord";
 
+#define LED_PIN 2   // Built-in LED (usually GPIO 2)
+
+// -------- SERVER --------
+// This creates a web server hosted on port 80
+WebServer server(80);
+
+// -------- EVENT HANDLER --------
+// This function is called when a client sends an HTTP GET request using the
+// "/event" endpoint. It will return information in a JSON format which allows
+// the mobile application to identify the event the ESP32 represents.
+void handleEvent() {
+  // This is a test version to see if the JSON would show when redirected to /event
+  String json = "{";
+  json += "\"eventId\":\"EVT-001\",";
+  json += "\"eventType\":\"Work\",";
+  json += "\"name\":\"ConnectCord Demo Event\",";
+  json += "\"timeWindow\":\"10:00-14:00\"";
+  json += "}";
+
+  server.send(200, "application/json", json);
+}
+
+// -------- SETUP --------
+// The setup will run when the ESP32 is turned on or resets.
+// It will hten initialize some hardware, connect to the WiFi, and starts the network beacon
 void setup() {
   Serial.begin(115200);
+  delay(2000);
+
+  // Allows the Blue LED to act as an output
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);  // LED OFF initially
+
+  Serial.println("Starting ConnectCord Event Beacon...");
+  Serial.println("Connecting to WiFi...");
+
+  // Connects the ESP32 to the WiFi
   WiFi.begin(ssid, password);
 
-  Serial.print("Connecting to WiFi");
+  // Loop until the ESP32 is connected to a WiFi
+  // It will print dots until it is connected
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
+  // This will show when the WiFi is successfully connected
   Serial.println("\nWiFi connected!");
-  Serial.print("ESP32 IP address: ");
+  Serial.print("ESP32 IP Address: ");
   Serial.println(WiFi.localIP());
+
+  // Sets up the mDNS for the ESP32
+  if (!MDNS.begin(strMdnsName)){
+    Serial.println("Error setting up MDNS responder!");
+    while(1){
+      delay(1000);
+    }
+  }
+
+  // Adds service to the MDNS
+  MDNS.addService("_http", "_tcp", 80);
+  Serial.println("mDNS responder has started. You can access the ESP32 at http://" + String(strMdnsName) + ".local");
+
+  // Turn LED ON when beacon is ready
+  digitalWrite(LED_PIN, HIGH);
+
+  // This starts the web server and registers the "/event" endpoint for users to go to
+  server.on("/event", handleEvent);
+  server.begin();
+
+  Serial.println("Event Beacon is LIVE!");
+  Serial.println("Access /event to retrieve event data.");
 }
 
+// -------- LOOP --------
+// The loop function will continuously run after the setup function completes.
+// It will then listen actively for incoming HTTP requests
 void loop() {
+  // This will handle any incoming client requests
+  server.handleClient();
 }
