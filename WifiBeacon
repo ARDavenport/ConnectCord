@@ -32,6 +32,11 @@ void handleEvent() {
   server.send(200, "application/json", json);
 }
 
+// ----------- Root Handler --------------
+void handleRoot() {
+  server.send(200, "text/plain", "ConnectCord Event Beacon Running");
+}
+
 // -------- SETUP --------
 // The setup will run when the ESP32 is turned on or resets.
 // It will hten initialize some hardware, connect to the WiFi, and starts the network beacon
@@ -78,6 +83,7 @@ void setup() {
 
   // This starts the web server and registers the "/event" endpoint for users to go to
   server.on("/event", handleEvent);
+  server.on("/", handleRoot);
   server.begin();
 
   Serial.println("Event Beacon is LIVE!");
