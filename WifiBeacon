@@ -1,9 +1,11 @@
 // Wifi.h allows the ESP32 device to connect to an online WiFi network
 // WebServer.h allows the ESP32 to host a lightweight HTTP server
 // ESPmDNS allows the HTTP server to be found using a common Domain Name instead of an IP
+// HTTPClient will allow the ESP32 to make HTTP request, thus allowing it to communicate with the backend
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include <HTTPClient.h>
 
 // -------- CONFIG --------
 const char* ssid = "Redacted";
@@ -35,6 +37,27 @@ void handleEvent() {
 // ----------- Root Handler --------------
 void handleRoot() {
   server.send(200, "text/plain", "ConnectCord Event Beacon Running");
+}
+
+// ----------- API Test ------------
+// This sends a push request to the NodeJS backend
+// If it is successful, it will get back a response code of 200, and it will push the information to NodeJS
+// If it fails, it will get back a response code of -1
+void sendBeaconToBackend() {
+  HTTPClient http;
+  http.begin("http://[IPAddress of Host Computer]:3000/beacon");
+  http.addHeader("Content-Type", "application/json");
+
+  String payload = "{";
+  payload += "\"deviceId\":\"ESP32-001\",";
+  payload += "\"eventId\":\"EVT-001\",";
+  payload += "\"timestamp\":\"2026-02-01 T14:00\"";
+  payload += "}";
+
+  int responseCode = http.POST(payload);
+  Serial.println(responseCode);
+
+  http.end();
 }
 
 // -------- SETUP --------
@@ -88,6 +111,7 @@ void setup() {
 
   Serial.println("Event Beacon is LIVE!");
   Serial.println("Access /event to retrieve event data.");
+  sendBeaconToBackend();
 }
 
 // -------- LOOP --------
