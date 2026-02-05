@@ -1,10 +1,11 @@
 import { styles } from '../../styles/auth.styles'
-import { Text, View, Image, TouchableOpacity} from 'react-native'
+import { Text, View, Image, TouchableOpacity, TextInput} from 'react-native'
 
 import Logo from '../../assets/images/app_logo.png'
 import loginImg from '../../assets/images/login_image.png'
 import { Link } from 'expo-router'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
+
 
 
 const login = () => { 
@@ -23,17 +24,17 @@ const login = () => {
           <Image source={loginImg} style={styles.loginImg}/>
         </View>
 
-        <Link href="/signupPage" asChild>
+        <Link href="/signinPage" asChild>
           <TouchableOpacity>
-            <Text style={styles.btn} >GET STARTED</Text>
+            <Text style={styles.btn} >LOGIN</Text>
           </TouchableOpacity>
         </Link>
 
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?{''}
-          <Link href="/signinPage" asChild>
-            <Text style={styles.footerLink}>Sign In</Text>
+          <Text style={styles.footerText}>Don't have an account? {''}
+          <Link href="/signupPage" asChild>
+            <Text style={styles.footerLink}>Sign Up</Text>
           </Link>
           </Text>
           
