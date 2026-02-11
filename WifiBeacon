@@ -8,8 +8,13 @@
 #include <HTTPClient.h>
 
 // -------- CONFIG --------
-const char* ssid = "Redacted";
-const char* password = "Redacted";
+const char* STA_ssid = "Redacted";
+const char* STA_password = "Redacted";
+
+const char* AP_ssid = "Redacted";
+const char* AP_password = "Redacted";
+
+const char* backendURL = "http://[HostComputerIP]:3000/beacon";
 const char* strMdnsName = "connectcord";
 
 #define LED_PIN 2   // Built-in LED (usually GPIO 2)
@@ -45,13 +50,13 @@ void handleRoot() {
 // If it fails, it will get back a response code of -1
 void sendBeaconToBackend() {
   HTTPClient http;
-  http.begin("http://[IPAddress of Host Computer]:3000/beacon");
+  http.begin(backendURL);
   http.addHeader("Content-Type", "application/json");
 
   String payload = "{";
   payload += "\"deviceId\":\"ESP32-001\",";
   payload += "\"eventId\":\"EVT-001\",";
-  payload += "\"timestamp\":\"2026-02-01 T14:00\"";
+  payload += "\"timestamp\":\"2026-02-01 00:14:00\"";
   payload += "}";
 
   int responseCode = http.POST(payload);
@@ -71,23 +76,37 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);  // LED OFF initially
 
-  Serial.println("Starting ConnectCord Event Beacon...");
-  Serial.println("Connecting to WiFi...");
+  Serial.println("Starting ConnectCord AP + STA Event Beacon...");
+
+  //Enables dual WiFi mode
+  WiFi.mode(WIFI_AP_STA);
+
+  // Starts the STA (Station) WiFi mode to access external WiFi
+  WiFi.begin(STA_ssid, STA_password);
 
   // Connects the ESP32 to the WiFi
-  WiFi.begin(ssid, password);
-
-  // Loop until the ESP32 is connected to a WiFi
-  // It will print dots until it is connected
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
+  WiFi.softAP(AP_ssid, AP_password);
 
   // This will show when the WiFi is successfully connected
-  Serial.println("\nWiFi connected!");
-  Serial.print("ESP32 IP Address: ");
-  Serial.println(WiFi.localIP());
+  Serial.print("ESP32 AP IP Address: ");
+  Serial.println(WiFi.softAPIP());
+
+  // Waits for STA mode to safely boot up
+  int retries = 0;
+  while (WiFi.status() != WL_CONNECTED && retries < 10) {
+    delay(500);
+    Serial.print(".");
+    retries++;
+  }
+
+  // Checks to see if STA connected to the WiFi
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("\nSTA IP: ");
+    Serial.println(WiFi.localIP());
+    sendBeaconToBackend();
+  } else {
+    Serial.println("\nSTA not connected. Running AP only.");
+  }
 
   // Sets up the mDNS for the ESP32
   if (!MDNS.begin(strMdnsName)){
