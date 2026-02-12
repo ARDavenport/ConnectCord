@@ -19,8 +19,8 @@ CREATE TABLE Users (
 );
 
 CREATE TABLE Profile (
-  profileID VARCHAR(100) NOT NULL PRIMARY KEY,
-  bio TEXT, 
+  profileID VARCHAR(100) NOT NULL PRIMARY KEY, #having not null on a primary key is redundant but is still good practice, as it improves clarity
+  bio TEXT NOT NULL, 
   linkedinURL VARCHAR(100),
   githubURL VARCHAR(100),
   portfolioURL VARCHAR(100),
@@ -30,7 +30,6 @@ CREATE TABLE Profile (
   experiences text,
   imageURL VARCHAR(100),
   major VARCHAR(200) NOT NULL, 
-  certifications text,
   status VARCHAR(200) NOT NULL, 
   FOREIGN KEY (profileID)
   REFERENCES Users (userID)
@@ -39,19 +38,32 @@ CREATE TABLE Profile (
 CREATE TABLE Events(
      eventID VARCHAR(100) NOT NULL PRIMARY KEY,
      eventName VARCHAR(30) NOT NULL,
-     eventType VARCHAR(30),
-     location VARCHAR(100),
-     eventDesc text,
-     eventHosts text,
+     eventType VARCHAR(30) NOT NULL,
+     onlineEvent bool NOT NULL,
+     eventLocation VARCHAR(100) NOT NULL,
+     eventAddress VARCHAR(100) NOT NULL, #used for either the name and address of the event location, or the link should it be online
+     eventCity VARCHAR(100) NOT NULL,
+     eventState VARCHAR(100) NOT NULL,
+     eventDescription text NOT NULL,
      eventStartTime datetime,
      eventEndTime datetime
 	);
 
-CREATE TABLE Attends(
+CREATE TABLE Attends( # marks attendance for events, this can be used to create a list of people that actually attended an event
      userID VARCHAR(100) NOT NULL,
      eventID VARCHAR(100) NOT NULL,
-     checkInTime datetime,
-     checkOutTime datetime,
+     checkInTime datetime NOT NULL, 
+     checkOutTime datetime NOT NULL,
+     FOREIGN KEY (userID)
+     REFERENCES Users (userID),
+     FOREIGN KEY (eventID)
+     REFERENCES Events (eventID),
+     PRIMARY KEY (userID, eventID)
+	);
+
+CREATE TABLE EventHosts( #marks host/admin users for a given event
+     userID VARCHAR(100) NOT NULL,
+     eventID VARCHAR(100) NOT NULL,
      FOREIGN KEY (userID)
      REFERENCES Users (userID),
      FOREIGN KEY (eventID)
@@ -59,15 +71,46 @@ CREATE TABLE Attends(
      PRIMARY KEY (userID, eventID)
 	);
     
-CREATE TABLE Education(
-	profileID VARCHAR(100),
+CREATE TABLE EventSignup( #can search using this to find a list of people signed up for an event, though not necessarily attending
+	 userID VARCHAR(100) NOT NULL,
+     eventID VARCHAR(100) NOT NULL,
+	 FOREIGN KEY (userID)
+     REFERENCES Users (userID),
+     FOREIGN KEY (eventID)
+     REFERENCES Events (eventID),
+     PRIMARY KEY (userID, eventID)
+);
+    
+CREATE TABLE CollegeEducation(
+	profileID VARCHAR(100) NOT NULL,
+    uniLevel ENUM('Associates', 'Bachelors', 'Masters', 'Doctorate', 'Dropout', 'Did Not Attend', 'Attending') NOT NULL,
+    uniGradYear year NOT NULL,
+    uniName VARCHAR(100)NOT NULL,
+    major VARCHAR(100) NOT NULL,
+    minor VARCHAR(100),
+    GPA float,
+    FOREIGN KEY (profileID)
+	REFERENCES Users (userID),
+    PRIMARY KEY (profileID, uniLevel, uniGradYear, uniName, major)
+);
+
+CREATE TABLE HighSchoolEducation(
+	profileID VARCHAR(100) NOT NULL PRIMARY KEY,
 	hsLevel ENUM('Graduate', 'Dropout','Did Not Attend') NOT NULL,
     hsGradYear year,
-    uniLevel ENUM('Associates', 'Bachelors', 'Masters', 'Doctorate', 'Dropout', 'Did Not Attend') NOT NULL,
-    uniGradYear year,
-    uniName VARCHAR(100),
+    GPA float,
     FOREIGN KEY (profileID)
 	REFERENCES Users (userID)
 );
 
-
+CREATE TABLE Certifications(
+	userID VARCHAR(100) NOT NULL,
+    certName VARCHAR(200) NOT NULL,
+    certProvider VARCHAR(200) NOT NULL,
+    certDate date,
+	FOREIGN KEY (userID)
+	REFERENCES Users (userID),
+    PRIMARY KEY (userID, certName)
+);
+# SELECT userID FROM Attends WHERE eventID = 'insertidhere'; gives you a list of attendees for a certain event, you can change this
+# depending on what you need to grab information. we can check in javascript if someone has permissions before giving them any information
