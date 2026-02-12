@@ -6,8 +6,8 @@ dotenv.config();
 
 const connection = mySQL.createConnection({
     host: 'localhost',
-    user: 'Oviya',
-    password:'Vomisha',
+    user: 'root',
+    password:'115227',
     database: 'ConnectCord'
 });
 
@@ -57,3 +57,4 @@ export default connection.promise();
 
 // export { prisma, connectDB, disconnectDB };
 // export everything, should be in server.js
+

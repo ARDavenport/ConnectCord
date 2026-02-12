@@ -6,8 +6,6 @@ import loginImg from '../../assets/images/login_image.png'
 import { Link } from 'expo-router'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 
-
-
 const login = () => { 
   
   return (
@@ -38,7 +36,7 @@ const login = () => {
           </Link>
           </Text>
           
-       </View>
+        </View>
     
       </SafeAreaView>
     </SafeAreaProvider>   

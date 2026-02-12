@@ -246,4 +246,3 @@ const resetPassword = async (req, res, next) => {
 
 export { register, login, logout, requestPasswordReset, resetPassword}; // exprort all controllers
 // update them to route
-

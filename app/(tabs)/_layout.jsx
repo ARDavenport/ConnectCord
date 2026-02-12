@@ -7,9 +7,6 @@ export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ 
         headerShown: true,
-        headerStyle: {
-          margin: 40
-        },
         tabBarShowLabel: false ,
         tabBarActiveTintColor: COLORS.secondary,
         tabBarInactiveTintColor: 'grey',

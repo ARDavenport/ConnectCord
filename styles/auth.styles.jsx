@@ -22,17 +22,16 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontWeight: '700',
-    fontSize: 30,
+    fontSize: 42,
     marginBottom: 10,
-    fontFamily: 'Marker Felt',
     color: COLORS.white
   },
 
   subTitle: {
-    fontSize: 18,
-    fontFamily: 'Marker Felt',
-    marginBottom: 20,
-    color: COLORS.white
+    fontSize: 16,
+    color: '#AAA',
+    marginTop: 6,
+    marginBottom: 50
   },
   
 
@@ -62,8 +61,8 @@ export const styles = StyleSheet.create({
   },
   
   footer:{
-    marginTop: 80,
-    paddingVertical: 10
+    alignItems: 'center',
+    marginTop: 50
   },
 
   footerLink: {
