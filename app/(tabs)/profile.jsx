@@ -1,45 +1,29 @@
 import { ScrollView, View, Text, Button, Alert, StyleSheet, TextInput, TouchableOpacity, Image, TouchableWithoutFeedback, Keyboard  } from 'react-native'
 import React, { useState } from 'react'
-import { COLORS } from '../../constants/themes'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
-import { Link, useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
-
 
 export default function profile() {
 
-  const router = useRouter();
-    const [email, setEmail] = React.useState('');
-    const [password, setPassword] = React.useState(''); 
-    const [error, setError] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState(''); 
+  const [error, setError] = React.useState('');
 
-  const authSignIn = () => {
-    setError('');
-    if (!email || !password){
-      setError('please enter username and password');
-      return;
-    }
+  const [showEventForm, changeShowEventForm] = useState(false);
+  const [showSettings, changeShowSettings] = useState(false);
+  const [showLogout, changeShowLogout] = useState(false);
 
-    if (email != '123' || password != '123'){
-      setError('wrong email or password')
-      return;
-    } else {
-      router.replace('../(tabs)/homePage')
-    }
 
-  }
 
-  const [showEventForm, changeShowContent] = useState(false);
-  const btnShowEventForm = () => {
-    changeShowContent(!showEventForm);
+  const btnEventForm = () => {
+    changeShowEventForm(!showEventForm);
   };
 
-  const btnHideEventForm = () => {
-    changeShowContent(!showEventForm);
+  const btnSettings = () => {
+    changeShowSettings(!showSettings);
   };
 
   const btnLogout = () => {
-    
+    changeShowLogout(!showLogout);
   };
 
   return (
@@ -49,19 +33,22 @@ export default function profile() {
         justifyContent: 'center',
         alignItems: 'center'   
       }}>
-      {!showEventForm && (
+      {!showEventForm && !showSettings && !showLogout && (
         <View>
           <Text style={styles.container}>Your profile will appear here! 🎉</Text>
-          <Button
-            title="Create event"
-            onPress={btnShowEventForm}
-            accessibilityLabel="Create event"
-          />
-          <Button
-            title="Logout"
-            onPress={btnLogout}
-            accessibilityLabel="Logout"
-          />
+         
+          <TouchableOpacity style={styles.button} onPress={btnEventForm}>
+            <Text style={styles.buttonText}>Create Event</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={btnSettings}>
+            <Text style={styles.buttonText}>Settings</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={btnLogout}>
+            <Text style={styles.buttonText}>Logout</Text>
+          </TouchableOpacity>
+          
          </View>
       )}
       {showEventForm && (
@@ -80,7 +67,7 @@ export default function profile() {
           
                     
           
-                  <View style={styles.formContainer}>
+                  <View style={styles.container}>
                     <Text style={styles.subTitle}>Event Name</Text>
                     <View style={styles.inputContainer}> 
                          
@@ -157,11 +144,77 @@ export default function profile() {
                   {error && <Text style={styles.errorText}>{error}</Text>}
           
                  
-                  <Button style={styles.button}
-                    title="Cancel"
-                    onPress={btnHideEventForm}
-                    accessibilityLabel="Cancel"
-                  />
+                  <TouchableOpacity style={styles.cancelButton} onPress={btnEventForm}>
+                   <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+
+                  </ScrollView>
+          
+                </SafeAreaView>
+                </TouchableWithoutFeedback>
+              </SafeAreaProvider>
+          
+        </ScrollView>
+      )}
+      {showSettings && (
+        <ScrollView style={styles.content}>
+          <Text style={styles.container}>Settings</Text>
+          <SafeAreaProvider>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                  <SafeAreaView style={styles.container}>
+                
+                  
+                    <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
+                    <View style={styles.headerContainer}>
+                      <Text style={styles.title}>Change your settings!</Text>
+                      
+                    </View>
+            
+
+                    <View>
+                      <Text style={styles.subTitle}>Change username</Text>
+                      <Text style={styles.subTitle}>Change profile picture</Text>
+                      <Text style={styles.subTitle}>Change email</Text>
+                      <Text style={styles.subTitle}>Change password</Text>
+                    </View>
+               
+          
+                  {error && <Text style={styles.errorText}>{error}</Text>}
+          
+                 
+                  <TouchableOpacity style={styles.cancelButton} onPress={btnSettings}>
+                   <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  </ScrollView>
+          
+                </SafeAreaView>
+                </TouchableWithoutFeedback>
+              </SafeAreaProvider>
+          
+        </ScrollView>
+      )}
+
+      {showLogout && (
+        <ScrollView style={styles.content}>
+          <Text style={styles.container}>Logout</Text>
+          <SafeAreaProvider>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                  <SafeAreaView style={styles.container}>
+                
+                  
+                  <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
+                  <View style={styles.headerContainer}>
+                    <Text style={styles.title}>Are you sure you want to log out?</Text>
+                    
+                  </View>
+                        
+          
+                  {error && <Text style={styles.errorText}>{error}</Text>}
+          
+                 
+                  <TouchableOpacity style={styles.cancelButton} onPress={btnLogout}>
+                   <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
                   </ScrollView>
           
                 </SafeAreaView>
@@ -191,8 +244,26 @@ const styles = StyleSheet.create({
     height: 150,
   },
   button: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: '#80ac92',
+    outlineColor: '#657e6f',
+    borderRadius: 10,
+    margin: 5,
     padding: 10,
-    margin: 10,
-  }
+    borderWidth: 2,
+    alignItems: 'center'
+  },
+  cancelButton: {
+    backgroundColor: 'maroon',
+    color: 'white',
+    borderRadius: 10,
+    margin: 5,
+    padding: 10,
+    alignItems: 'center'
+  },
+  title: {
+    //fontSize: 100
+  },
+  subTitle: {
+    
+  },
 })
