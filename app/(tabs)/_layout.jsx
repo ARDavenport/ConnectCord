@@ -7,7 +7,14 @@ export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ 
         headerShown: true,
-        
+        headerStyle: {
+          height: 40,
+          margin: 40,
+          backgroundColor: '#80ac92',
+          borderBottomColor: 'black',
+          borderBottomWidth: 2,
+          
+        },
         tabBarShowLabel: false ,
         tabBarActiveTintColor: COLORS.secondary,
         tabBarInactiveTintColor: 'grey',
@@ -16,9 +23,10 @@ export default function TabsLayout() {
           position: "absolute",
           borderTopWidth: 0,
           height: 60,
-          paddingBottom: 10
+          paddingBottom: 5,
+          
         }
-      
+        
       }}>
       <Tabs.Screen
         name="homePage"
