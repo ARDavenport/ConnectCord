@@ -32,8 +32,8 @@ interface CheckInPayload {
 
 // ─── Configuration ───
 // TODO: Replace with mDNS discovery or config file
-const ESP32_BASE_URL = "http://connectcord.local";
-const BACKEND_BASE_URL = "http://192.168.1.8:3000"; // Your backend machine IP
+const ESP32_BASE_URL = "http://10.143.138.87";
+const BACKEND_BASE_URL = "http://10.143.130.113:3000"; // Your backend machine IP
 const FETCH_TIMEOUT_MS = 5000;
 const USER_ID = "USER-001"; // TODO: Replace with actual auth
 
