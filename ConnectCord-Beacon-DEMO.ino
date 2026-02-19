@@ -4,8 +4,8 @@
 #include <ArduinoJson.h>
 
 // ─── Configuration ───
-const char* ssid     = "NETGEAR28";
-const char* password = "silkyskates732";
+const char* ssid     = "redacted";
+const char* password = "redacted";
 
 // mDNS hostname — device will be reachable at "connectcord.local"
 const char* MDNS_HOSTNAME = "connectcord";
