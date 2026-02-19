@@ -16,7 +16,7 @@ export default function TabsLayout() {
           
         },
         tabBarShowLabel: false ,
-        tabBarActiveTintColor: COLORS.secondary,
+        tabBarActiveTintColor: '#80ac92',
         tabBarInactiveTintColor: 'grey',
         tabBarStyle: {
           backgroundColor: COLORS.backgroundColor,

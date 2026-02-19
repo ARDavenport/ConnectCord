@@ -9,7 +9,7 @@ const search = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '16px'
+          gap: '16px',
         }}>
       <Text>Search for events, users, and companies! 🎉</Text>
       <TextInput
@@ -20,7 +20,10 @@ const search = () => {
           height: 40,
           padding: 5,
           marginHorizontal: 8,
-          borderWidth: 1,
+          borderWidth: 3,
+          borderColor: '#516d5d',
+          color: '#516d5d',
+          borderRadius: 10
         }}
       />
     </View>
