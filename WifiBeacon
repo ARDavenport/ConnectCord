@@ -1,0 +1,142 @@
+// Wifi.h allows the ESP32 device to connect to an online WiFi network
+// WebServer.h allows the ESP32 to host a lightweight HTTP server
+// ESPmDNS allows the HTTP server to be found using a common Domain Name instead of an IP
+// HTTPClient will allow the ESP32 to make HTTP request, thus allowing it to communicate with the backend
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <HTTPClient.h>
+
+// -------- CONFIG --------
+const char* STA_ssid = "Redacted";
+const char* STA_password = "Redacted";
+
+const char* AP_ssid = "Redacted";
+const char* AP_password = "Redacted";
+
+const char* backendURL = "http://[HostComputerIP]:3000/beacon";
+const char* strMdnsName = "connectcord";
+
+#define LED_PIN 2   // Built-in LED (usually GPIO 2)
+
+// -------- SERVER --------
+// This creates a web server hosted on port 80
+WebServer server(80);
+
+// -------- EVENT HANDLER --------
+// This function is called when a client sends an HTTP GET request using the
+// "/event" endpoint. It will return information in a JSON format which allows
+// the mobile application to identify the event the ESP32 represents.
+void handleEvent() {
+  // This is a test version to see if the JSON would show when redirected to /event
+  String json = "{";
+  json += "\"eventId\":\"EVT-001\",";
+  json += "\"eventType\":\"Work\",";
+  json += "\"name\":\"ConnectCord Demo Event\",";
+  json += "\"timeWindow\":\"10:00-14:00\"";
+  json += "}";
+
+  server.send(200, "application/json", json);
+}
+
+// ----------- Root Handler --------------
+void handleRoot() {
+  server.send(200, "text/plain", "ConnectCord Event Beacon Running");
+}
+
+// ----------- API Test ------------
+// This sends a push request to the NodeJS backend
+// If it is successful, it will get back a response code of 200, and it will push the information to NodeJS
+// If it fails, it will get back a response code of -1
+void sendBeaconToBackend() {
+  HTTPClient http;
+  http.begin(backendURL);
+  http.addHeader("Content-Type", "application/json");
+
+  String payload = "{";
+  payload += "\"deviceId\":\"ESP32-001\",";
+  payload += "\"eventId\":\"EVT-001\",";
+  payload += "\"timestamp\":\"2026-02-01 00:14:00\"";
+  payload += "}";
+
+  int responseCode = http.POST(payload);
+  Serial.println(responseCode);
+
+  http.end();
+}
+
+// -------- SETUP --------
+// The setup will run when the ESP32 is turned on or resets.
+// It will hten initialize some hardware, connect to the WiFi, and starts the network beacon
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+
+  // Allows the Blue LED to act as an output
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);  // LED OFF initially
+
+  Serial.println("Starting ConnectCord AP + STA Event Beacon...");
+
+  //Enables dual WiFi mode
+  WiFi.mode(WIFI_AP_STA);
+
+  // Starts the STA (Station) WiFi mode to access external WiFi
+  WiFi.begin(STA_ssid, STA_password);
+
+  // Connects the ESP32 to the WiFi
+  WiFi.softAP(AP_ssid, AP_password);
+
+  // This will show when the WiFi is successfully connected
+  Serial.print("ESP32 AP IP Address: ");
+  Serial.println(WiFi.softAPIP());
+
+  // Waits for STA mode to safely boot up
+  int retries = 0;
+  while (WiFi.status() != WL_CONNECTED && retries < 10) {
+    delay(500);
+    Serial.print(".");
+    retries++;
+  }
+
+  // Checks to see if STA connected to the WiFi
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("\nSTA IP: ");
+    Serial.println(WiFi.localIP());
+    sendBeaconToBackend();
+  } else {
+    Serial.println("\nSTA not connected. Running AP only.");
+  }
+
+  // Sets up the mDNS for the ESP32
+  if (!MDNS.begin(strMdnsName)){
+    Serial.println("Error setting up MDNS responder!");
+    while(1){
+      delay(1000);
+    }
+  }
+
+  // Adds service to the MDNS
+  MDNS.addService("_http", "_tcp", 80);
+  Serial.println("mDNS responder has started. You can access the ESP32 at http://" + String(strMdnsName) + ".local");
+
+  // Turn LED ON when beacon is ready
+  digitalWrite(LED_PIN, HIGH);
+
+  // This starts the web server and registers the "/event" endpoint for users to go to
+  server.on("/event", handleEvent);
+  server.on("/", handleRoot);
+  server.begin();
+
+  Serial.println("Event Beacon is LIVE!");
+  Serial.println("Access /event to retrieve event data.");
+  sendBeaconToBackend();
+}
+
+// -------- LOOP --------
+// The loop function will continuously run after the setup function completes.
+// It will then listen actively for incoming HTTP requests
+void loop() {
+  // This will handle any incoming client requests
+  server.handleClient();
+}
