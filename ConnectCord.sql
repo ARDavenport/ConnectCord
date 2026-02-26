@@ -45,6 +45,7 @@ CREATE TABLE Events(
      eventCity VARCHAR(100) NOT NULL,
      eventState VARCHAR(100) NOT NULL,
      eventDescription text NOT NULL,
+	 companyImageURL VARCHAR(100),
      eventStartTime datetime,
      eventEndTime datetime
 	);
@@ -99,6 +100,13 @@ CREATE TABLE HighSchoolEducation(
 	hsLevel ENUM('Graduate', 'Dropout','Did Not Attend') NOT NULL,
     hsGradYear year,
     GPA float,
+    FOREIGN KEY (profileID)
+	REFERENCES Users (userID)
+);
+
+CREATE TABLE userTags(
+    profileID VARCHAR(100) NOT NULL PRIMARY KEY,
+    userTag VARCHAR(20),
     FOREIGN KEY (profileID)
 	REFERENCES Users (userID)
 );
