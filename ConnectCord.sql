@@ -21,14 +21,14 @@ CREATE TABLE Users (
 CREATE TABLE Profile (
   profileID VARCHAR(100) NOT NULL PRIMARY KEY, #having not null on a primary key is redundant but is still good practice, as it improves clarity
   bio TEXT NOT NULL, 
-  linkedinURL VARCHAR(100),
-  githubURL VARCHAR(100),
-  portfolioURL VARCHAR(100),
+  linkedinURL VARCHAR(200),
+  githubURL VARCHAR(200),
+  portfolioURL VARCHAR(200),
   gpa FLOAT,
-  resumePDF VARCHAR(100), #link to the image
+  resumePDF VARCHAR(200), #link to the image
   skills text,
   experiences text,
-  imageURL VARCHAR(100),
+  imageURL VARCHAR(200),
   major VARCHAR(200) NOT NULL, 
   status VARCHAR(200) NOT NULL, 
   FOREIGN KEY (profileID)
@@ -45,7 +45,7 @@ CREATE TABLE Events(
      eventCity VARCHAR(100) NOT NULL,
      eventState VARCHAR(100) NOT NULL,
      eventDescription text NOT NULL,
-	 companyImageURL VARCHAR(100),
+	 companyImageURL VARCHAR(200),
      eventStartTime datetime,
      eventEndTime datetime
 	);
