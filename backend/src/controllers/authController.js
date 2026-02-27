@@ -243,6 +243,18 @@ const resetPassword = async (req, res, next) => {
     };
 };
 
+const checkEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const [users] = await connection.execute('SELECT * FROM Users WHERE email = ?', [email]);
+    res.json({ exists: users.length > 0 });
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
-export { register, login, logout, requestPasswordReset, resetPassword}; // exprort all controllers
+
+
+export { register, login, logout, requestPasswordReset, resetPassword, checkEmail}; // exprort all controllers
 // update them to route

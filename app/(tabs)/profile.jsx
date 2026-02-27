@@ -1,13 +1,20 @@
 
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, TextInput, Alert, Button } from 'react-native'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import  userDefault from '../../assets/images/defaultImg.png'
+import { COLORS } from '../../constants/themes';
+import { useRouter } from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker'
+import { WebView } from 'react-native-webview'
+import { API_BASE_URL } from '../../constants/api';
+
 
 const profile = () => {
 
+  const router = useRouter();
   const DEFAULT_ABOUT = "Write something about yourself";
 
   const [profileImage, setProfileImage] = useState(null);
@@ -22,9 +29,9 @@ const profile = () => {
     'Workshop',
     'Career Fair',
   ]);
+  const [file, setFile] = useState(null);
   
-
-
+  
   const pickImage = async (setImage) => {
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -55,12 +62,12 @@ const profile = () => {
       return;
     }
 
-    if (trimmed.length > 10) {
+    if (trimmed.length > 20) {
       Alert.alert('Tag too long', 'Tags can be at most 10 characters.');
       return;
     }
 
-    if (tags.length >= 3) {
+    if (tags.length >= 4) {
       Alert.alert('You can only add three tags');
       return;
     }
@@ -91,16 +98,55 @@ const profile = () => {
   };
 
 
+  const logout = () => {
+    Alert.alert(
+      'Logging Out',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Yes',
+          onPress: () => router.replace('../(auth)/signinPage')
+        },
+        {
+          text: 'No'
+        }
+      ]
+    );
+  };
+
+  const pickResume = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: '*/*',
+      copyToCacheDirectory: true,
+    });
+    if (result)
+
+    if (!result.canceled){
+      setFile(result.assets[0]);
+    }
+  }
+
+  
   return (
 
+
     <SafeAreaProvider>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['left','right','bottom']}>
        <ScrollView
           contentContainerStyle={[styles.scrollContainer, {paddingBottom: 40}]}
           keyboardShouldPersistTaps="handled"
           bounces={true}
           
         >
+          <TouchableOpacity
+            style={styles.settingButton}  
+            onPress={logout}
+          >
+            <Ionicons name="exit" size={32} color="white" />
+          </TouchableOpacity>
+
+          <View style={styles.headerColorBar} />
+
           <View style={styles.imageWrapper}>
             <View style={styles.imageClip}>
               <Image
@@ -120,7 +166,9 @@ const profile = () => {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.firstName}>FULL NAME</Text> 
+                <Text style={styles.fullName}>FULL NAME</Text>
+
+
           <Text style={styles.location}>location</Text>
       
           
@@ -136,12 +184,12 @@ const profile = () => {
                 </View>
               ))}
 
-              {tags.length < 3 && (
+              {tags.length < 4 && (
                 isAddingTag ? (
                   <>
                     <TextInput
                       style={styles.tagInput}
-                      placeholder="Add Personal Tag"
+                      placeholder="Add Personal Tag That Describes You"
                       placeholderTextColor="#888"
                       value={tagInput}
                       onChangeText={setTagInput}
@@ -193,10 +241,6 @@ const profile = () => {
               <Text style={styles.aboutText}>{aboutMe}</Text>
             )}
           </View>
-
-
-
-
            
           <View style={styles.cardContainer}>
             <View style={styles.cardHeader}>
@@ -234,6 +278,48 @@ const profile = () => {
             )}
           </View>
 
+          <View style={styles.cardContainer}>
+            {!file ? (
+              <Button title="Upload Resume" onPress={pickResume} />
+            ) : (
+              <View style={{ width: '100%' }}>
+                <Text
+                  style={{
+                    marginBottom: 10,
+                    color: 'white',
+                    fontSize: 12,
+                    textAlign: 'center',
+                  }}
+                >
+                  Uploaded: {file.name}
+                </Text>
+
+          
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-around', 
+                    marginBottom: 30,
+                  }}
+                >
+                  <Button title="Replace Resume" onPress={pickResume} />
+                  <Button
+                    title="Delete Resume"
+                    onPress={() => setFile(null)}
+                    color="red"
+                  />
+                </View>
+
+                <WebView
+                  originWhitelist={['*']}
+                  allowFileAccess
+                  allowingReadAccessToURL={file.uri}
+                  source={{ uri: file.uri }}
+                  style={{ width: '100%', height: 500 }}
+                />
+              </View>
+            )}
+         </View>
 
           
       
@@ -251,12 +337,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#222222',
-    alignItems: 'center',
   },
 
   scrollContainer: {
     alignItems: 'center',
-    paddingTop: 30,
     flexGrow: 1, 
   },
 
@@ -267,7 +351,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30
+    marginBottom: 30,
+    marginTop: -90,
   },
 
   imageClip: {
@@ -284,6 +369,16 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
+  settingButton: {
+    position: 'absolute',
+    top: 40,
+    right: 5,
+    padding: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+
   cameraButton: {
     position: 'absolute',
     bottom: 6,
@@ -296,7 +391,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  firstName: {
+  fullName: {
     fontSize: 32,
     fontWeight: 700,
     color: 'white'
@@ -415,6 +510,11 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 6,
   },
-  
-})
 
+  headerColorBar: {
+    width: '100%',
+    height: 175,
+    backgroundColor: COLORS.primary,
+  },
+
+})

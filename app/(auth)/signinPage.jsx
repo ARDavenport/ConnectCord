@@ -4,32 +4,62 @@ import { Link, useRouter } from 'expo-router'
 import { COLORS } from '../../constants/themes'
 import React from 'react'
 import { Ionicons } from '@expo/vector-icons'
+import { API_BASE_URL } from '../../constants/api';
+
+
 
 export default function signinPage() {
 
   const router = useRouter();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState(''); 
+  const [error, setError] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
 
-
-  const [error, setError] = React.useState('');
-
-  const authSignIn = () => {
+  const authSignIn = async () => {
     setError('');
     if (!email || !password){
       setError('please enter username and password');
       return;
     }
 
-    if (email != '123' || password != '123'){
-      setError('wrong email or password')
+    try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {   //change wifi IP
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        passwords: password, // must match backend field
+      }),
+    });
+
+    // Debug: see what server actually returns
+    const text = await response.text();
+    console.log('Server response:', text);
+
+    // Try parsing JSON safely
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      setError('Server returned invalid JSON');
       return;
-    } else {
-      router.replace('../(tabs)/homePage')
     }
 
-  }
+    if (!response.ok) {
+      setError(data.error || 'Login failed');
+      return;
+    }
+
+    console.log('Logged in user:', data.data);
+
+      router.replace('../(tabs)/dummy');
+    } catch (err) {
+      console.error(err);
+      setError('Network error. Check your server.');
+    }
+
+  };
 
 
   return (
@@ -85,13 +115,10 @@ export default function signinPage() {
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
               <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color='#666'/>
             </TouchableOpacity>
-
           </View>
 
         </View>
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
+            {error && <Text style={styles.errorText}>{error}</Text>}  
         <View>
             
           <TouchableOpacity style={styles.signInButton} onPress={authSignIn}>

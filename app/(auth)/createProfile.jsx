@@ -1,16 +1,24 @@
 import { StyleSheet, Text, View, TextInput, TouchableWithoutFeedback, Keyboard, TouchableOpacity, ScrollView } from 'react-native'
 import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/themes'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { Dropdown } from 'react-native-element-dropdown'
 import React, { useState, useEffect } from 'react'
+import uuid from 'react-native-uuid';
+import { API_BASE_URL } from '../../constants/api';
 
 
-const BASE_URL = "http://192.168.1.241:8000/api/location"; 
+
+
+
 
 const createProfile = () => {  
 
   const router = useRouter();
+  const params = useLocalSearchParams();  
+  
+  const { email, password } = params;  
+
   
   const[firstName, setFirstName] = React.useState('');
   const[middleName, setMiddleName] = React.useState('');
@@ -23,18 +31,19 @@ const createProfile = () => {
   const [stateValue, setStateValue] = useState(null);
   const [city, setCity] = useState(null);
   const [isFocus, setIsFocus] = useState(false);
+  const [isCityFocus, setIsCityFocus] = useState(false);
 
   const [loadingStates, setLoadingStates] = useState(true);
   const [loadingCities, setLoadingCities] = useState(false);
-  const [error, setError] = useState(null);
-
+  const [loading, setLoading] = useState(false);  
+  const [error, setError] = useState('');
   
   useEffect(() => {
     const fetchStates = async () => {
       setLoadingStates(true);
       setError(null);
       try {
-        const response = await fetch(`${BASE_URL}/states`);
+        const response = await fetch(`${API_BASE_URL}/api/location/states`);
         const data = await response.json();
         const formattedStates = data.map((state) => ({
           label: state.name,
@@ -52,11 +61,15 @@ const createProfile = () => {
   }, []);
 
   useEffect(() => {
-    if (!stateValue) return;
+    if (!stateValue){
+      setCitiesList([]); // Clear cities when no state is selected
+      setCity(null); // Reset city when state is cleared
+      return;
+    }
     setLoadingCities(true);
     const fetchCities = async () => {
       try {
-        const response = await fetch(`${BASE_URL}/states/${stateValue}/cities`);
+        const response = await fetch(`${API_BASE_URL}/api/location/states/${stateValue}/cities`);
         const data = await response.json();
         const formattedCities = data.map((city) => ({
           label: city.name,
@@ -70,18 +83,78 @@ const createProfile = () => {
       }
     };
     fetchCities();
-  }, [stateValue]);
+  }, [stateValue]);  
 
+  const validateForm = () => {
+    if (!firstName.trim()) return 'First name is required';
+    if (!lastName.trim()) return 'Last name is required';
+    if (!phoneNum.trim()) return 'Phone number is required';
+    if (phoneNum.length < 10) return 'Please enter a valid phone number';
+    if (!stateValue) return 'Please select a state';
+    if (!city) return 'Please select a city';
+    return null;
+  };
 
-    
+  const handleCreateAccount = async () => {
+    // Validate form first
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
-  const handleCreateProfile = () => {
-    router.replace('../(tabs)/homePage')
-  }
+    // Check if email and password exist
+    if (!email || !password) {
+      setError('Session expired. Please go back and sign up again.');
+      return;
+    }
 
+    setLoading(true);
+    setError('');
 
+    // Get current MySQL formatted time
+    const now = new Date();
+    const mysqlTime = now.toISOString().slice(0, 19).replace('T', ' ');
+    const userID = uuid.v4();
 
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userID,
+          firstName,
+          middleName: middleName || null,
+          lastName,
+          email,
+          passwords: password,
+          phoneNumber: phoneNum,
+          city,
+          state: stateValue,
+          createdAt: mysqlTime
+        }),
+      });
 
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || data.error || 'Registration failed');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Registration successful:', data);
+      
+      // Navigate to home page on success
+      router.replace('../(tabs)/dummy');
+      
+    } catch (err) {
+      console.error('Network error:', err);
+      setError('Network error. Check your server.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaProvider>
@@ -188,16 +261,18 @@ const createProfile = () => {
                   valueField="value"
                   placeholder="Select City"
                   value={city}
-                  disabled={!stateValue}
+                  disable={!stateValue}
                   onFocus={() => setIsFocus(true)}
-                  onBlur={() => setIsFocus(false)}
-                  onChange={item => {
+                  onBlur={() => setIsCityFocus(false)}
+                  onChange={item => {  
                     setCity(item.value);
                     setIsFocus(false);
                   }}
                 />
 
-                <TouchableOpacity style={styles.button} onPress={(handleCreateProfile)}>
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+                <TouchableOpacity style={styles.button} onPress={(handleCreateAccount)}>
                     <Text style={styles.buttonText}>Create</Text>
                 </TouchableOpacity>
 
@@ -290,6 +365,13 @@ const styles = StyleSheet.create({
     fontWeight: 700,
     fontSize: 22,
     color: COLORS.white
+  },
+
+  errorText: {
+    color: 'red',
+    width: 300,
+    marginBottom: 10,
+    fontSize: 14,
   },
   
 })

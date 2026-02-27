@@ -6,7 +6,7 @@ import { COLORS } from '../../constants/themes'
 export default function TabsLayout() {
   return (
     <Tabs screenOptions={{ 
-        headerShown: true,
+        headerShown: false,
         tabBarShowLabel: false ,
         tabBarActiveTintColor: COLORS.secondary,
         tabBarInactiveTintColor: 'grey',
@@ -19,28 +19,24 @@ export default function TabsLayout() {
         }
       
       }}>
+
       <Tabs.Screen
-        name="homePage"
+        name="dummy"
         options={{ 
-          title: 'Home',
+          title: 'Dummy',
           tabBarIcon: ({color, size}) => <Ionicons name = 'home' size={size} color={color}/>
         }}
       />
-      <Tabs.Screen
-        name="bookmarks"
-        options={{
-          title: 'Bookmarks',
-          tabBarIcon: ({color, size}) => <Ionicons name = 'bookmark' size={size} color={color}/>
-        }}
       
-      />
+      
       <Tabs.Screen
-        name="search"
+        name="checker"
         options={{
-          title: 'Search',
-          tabBarIcon: ({color, size}) => <Ionicons name = 'search' size={size} color={color}/>
+          title: 'Checker',
+          tabBarIcon: ({color, size}) => <Ionicons name = 'checkmark-sharp' size={size} color={color}/>
         }}     
       />
+      
       <Tabs.Screen
         name="profile"
         options={{

@@ -4,6 +4,7 @@ import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/themes'
 import React from 'react'
 import { Ionicons } from '@expo/vector-icons'
+import { API_BASE_URL } from '../../constants/api';
 
 
 export default function signupPage() {
@@ -12,15 +13,79 @@ export default function signupPage() {
 
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
-  const [cPassword, confirmPassword] = React.useState('');
+
+  const [cPassword, setCPassword] = React.useState('');
   const [showPassword, setShowPassword] = React.useState(false);
-  
+  const [error, setError] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
 
 
-  const authAccount = () => {
 
-   router.replace('/createProfile')
-  }
+
+  const checkEmailExists = async (email) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      return data.exists;
+    } catch (err) {
+      console.error('Error checking email:', err);
+      return false;
+    }
+  };
+
+  const handleContinue = async () => {
+    setError('');
+    setLoading(true);
+
+    // Validate form fields
+    if (!email || !password || !cPassword) {
+      setError('Please fill in every field');
+      setLoading(false);
+      return;
+    }
+
+    if (password !== cPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
+    // Check if email already exists
+    try {
+      const emailExists = await checkEmailExists(email);
+      
+      if (emailExists) {
+        setError('User already exists with this email. Please sign in or use another email.');
+        setLoading(false);
+        return;
+      }
+
+      router.push({
+        pathname: '/createProfile',
+        params: {
+          email: email,
+          password: password
+        }
+      });
+      
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError('Network error. Check your server.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <SafeAreaProvider>
@@ -49,8 +114,9 @@ export default function signupPage() {
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
+                  setError('');
                 }}
-              ></TextInput>           
+              ></TextInput>              
             </View>
 
             <View style={styles.inputContainer}>
@@ -62,15 +128,15 @@ export default function signupPage() {
                 autoCapitalize='none'
                 autoCorrect={false}
                 secureTextEntry={!showPassword}
-                textContentType="oneTimeCode"
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
+                  setError('');
                 }}
               ></TextInput>
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color='#666'/>
-              </TouchableOpacity>           
+              </TouchableOpacity>                
             </View>
 
             <View style={styles.inputContainer}>
@@ -82,23 +148,24 @@ export default function signupPage() {
                 autoCapitalize='none'
                 autoCorrect={false}
                 secureTextEntry={!showPassword}
-                textContentType="oneTimeCode"
                 value={cPassword}
                 onChangeText={(text) => {
-                  confirmPassword(text);
+                  setCPassword(text);
+                  setError('');
                 }}
-              ></TextInput>         
+              ></TextInput>
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color='#666'/>
-              </TouchableOpacity>
+              </TouchableOpacity>            
             </View>
 
           </View>
-
-
+                
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            
           <View>
-                    
-            <TouchableOpacity style={styles.signInButton} onPress={authAccount}>
+
+            <TouchableOpacity style={styles.signInButton} onPress={handleContinue}>
               <Text style={styles.signInText} >SIGN UP</Text>
             </TouchableOpacity>
         
@@ -207,10 +274,16 @@ const styles = StyleSheet.create({
     color: COLORS.white
   },
 
-
   footer: {
     position: 'absolute',
     bottom: 80
-  }
+  },
+
+  errorText: {
+    color: 'red',
+    width: 300,
+    marginBottom: 10,
+    fontSize: 14,
+  },
 
 })
