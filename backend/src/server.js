@@ -10,6 +10,7 @@ import mysql from 'mysql2'
 
 // Import Routes
 import authRoutes from "./routes/authRoutes.js"; // import routes for authorization
+import profileRoutes from "./routes/profileRoutes.js"; // import routes for profile management
 
 // connect to database
 //config();
@@ -32,6 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 // API Routes
 app.use("/auth", authRoutes); // authorization routes
 app.use("/api/location", locationRoutes); 
+app.use("/api/profile", profileRoutes); // profile management routes
 
 
 // Listen on port
