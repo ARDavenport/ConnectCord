@@ -1,0 +1,147 @@
+import mysql from "mysql2";
+import connection from 'backend/src/config/db.js'
+
+
+
+connection.connect((err) => {
+  if (err) {
+    console.error("Connection failed:", err);
+    return;
+  }
+  console.log("Connected to MySQL");
+
+  // Run full database setup
+  initializeDatabase();
+});
+
+function initializeDatabase() {
+
+  // 1️⃣ Create Schema
+  connection.query("CREATE SCHEMA IF NOT EXISTS ConnectCord", (err) => {
+    if (err) console.error(err);
+    else console.log("Schema created");
+  });
+
+  // 2️⃣ Use Schema
+  connection.query("USE ConnectCord", (err) => {
+    if (err) console.error(err);
+    else console.log("Using ConnectCord database");
+  });
+
+  // 3️⃣ Create Users Table
+  connection.query(`
+    CREATE TABLE IF NOT EXISTS Users (
+      userID VARCHAR(100) PRIMARY KEY,
+      firstName VARCHAR(255) NOT NULL,
+      middleName VARCHAR(255),
+      lastName VARCHAR(255) NOT NULL,
+      email VARCHAR(40) NOT NULL UNIQUE,
+      passwords VARCHAR(50) NOT NULL,
+      phoneNumber VARCHAR(10) NOT NULL,
+      roles VARCHAR(100) NOT NULL,
+      city VARCHAR(100) NOT NULL,
+      state VARCHAR(100) NOT NULL,
+      createdAt DATETIME
+    )
+  `, (err) => {
+    if (err) console.error(err);
+    else console.log("Users table created");
+  });
+
+  // 4️⃣ Insert Sample User
+  connection.query(`
+    INSERT INTO Users 
+    (userID, firstName, middleName, lastName, email, passwords, phoneNumber, roles, city, state, createdAt)
+    VALUES (UUID(), 'Emma', NULL, 'Stewart', 'emma@gmail.com', 'Emma123*',
+            '1235423468', 'user', 'Nashville', 'Tennessee', NOW())
+  `, (err) => {
+    if (err) console.error(err);
+    else console.log("Sample user inserted");
+  });
+
+  // 5️⃣ Create Profiles Table
+  connection.query(`
+    CREATE TABLE IF NOT EXISTS Profiles (
+      profileID VARCHAR(100) PRIMARY KEY,
+      fullName TEXT NOT NULL,
+      bio TEXT NOT NULL,
+      mail TEXT,
+      phone VARCHAR(50),
+      resumeURL VARCHAR(500),
+      linkedinURL VARCHAR(200),
+      githubURL VARCHAR(200),
+      portfolioURL VARCHAR(200),
+      skills TEXT,
+      FOREIGN KEY (profileID)
+        REFERENCES Users(userID)
+        ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error(err);
+    else console.log("Profiles table created");
+  });
+
+  // 6️⃣ Create Experiences Table
+  connection.query(`
+    CREATE TABLE IF NOT EXISTS Experiences (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      profileID VARCHAR(100) NOT NULL,
+      roleName VARCHAR(200) NOT NULL,
+      companyName VARCHAR(200) NOT NULL,
+      startDate DATE NOT NULL,
+      endDate DATE,
+      city VARCHAR(500),
+      state VARCHAR(500),
+      description TEXT,
+      FOREIGN KEY (profileID)
+        REFERENCES Profiles(profileID)
+        ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error(err);
+    else console.log("Experiences table created");
+  });
+
+  // 7️⃣ Create Educations Table
+  connection.query(`
+    CREATE TABLE IF NOT EXISTS Educations (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      profileID VARCHAR(100) NOT NULL,
+      schoolName VARCHAR(500) NOT NULL,
+      degree VARCHAR(500) NOT NULL,
+      fieldOfStudy VARCHAR(500) NOT NULL,
+      startDate DATE NOT NULL,
+      endDate DATE,
+      gpa FLOAT,
+      description TEXT,
+      FOREIGN KEY (profileID)
+        REFERENCES Profiles(profileID)
+        ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error(err);
+    else console.log("Educations table created");
+  });
+
+  // 8️⃣ Create Certifications Table
+  connection.query(`
+    CREATE TABLE IF NOT EXISTS Certifications (
+      id INT PRIMARY KEY AUTO_INCREMENT,
+      profileID VARCHAR(100) NOT NULL,
+      certificationName VARCHAR(500) NOT NULL,
+      organization VARCHAR(500) NOT NULL,
+      startDate DATE NOT NULL,
+      endDate DATE,
+      credentialID VARCHAR(500) NOT NULL,
+      credentialURL VARCHAR(500) NOT NULL,
+      FOREIGN KEY (profileID)
+        REFERENCES Profiles(profileID)
+        ON DELETE CASCADE
+    )
+  `, (err) => {
+    if (err) console.error(err);
+    else console.log("Certifications table created");
+  });
+
+  console.log("Database initialization complete");
+}

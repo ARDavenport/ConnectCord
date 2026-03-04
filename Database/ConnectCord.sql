@@ -1,8 +1,10 @@
+
 CREATE SCHEMA ConnectCord;
 
 USE ConnectCord;
 
 SHOW DATABASES;
+
 
 CREATE TABLE Users (
 	userID VARCHAR(100),
@@ -50,6 +52,7 @@ CREATE TABLE Profiles (
   skills TEXT,
   FOREIGN KEY (profileID)
   REFERENCES Users (userID)
+  -- add a location and get info from users table
 );
 
 -- one profile can have multiple experience, education, certification
@@ -96,6 +99,61 @@ CREATE TABLE Certifications (
   REFERENCES Profiles (profileID)
 );
 
+CREATE TABLE Events (
+  eventID varchar(100),
+  eventName varchar(300) NOT NULL,
+  organization varchar(300) NOT NULL,
+  eventHosts TEXT NOT NULL,
+  -- admins TEXT,
+  -- volunteers TEXT,
+  --attendees
+  description TEXT,
+  eventFee FLOAT NOT NULL,
+  eventStartTime DATETIME NOT NULL,
+  eventEndTime DATETIME NOT NULL,
+  city varchar(200),
+  eventState varchar(200),
+  eventAddress varchar(400) NOT NULL, -- can tell if the event is online w a meeting link or just a regular address
+  eventPicture varchar(500), -- can be null
+  eventCapacity INT, -- can be null
+
+);
+
+CREATE TABLE Attends (  -- marks attendance for events, this can be used to create a list of people that actually attended an event
+  userID VARCHAR(100) NOT NULL,
+     eventID VARCHAR(100) NOT NULL,
+     checkInTime datetime NOT NULL, 
+     checkOutTime datetime NOT NULL,
+     role ENUM ('Host', 'Admin', 'Volunteer', 'Attendee') NOT NULL, -- not pulled from registration because people who did not register can attend the event
+     FOREIGN KEY (userID)
+     REFERENCES Users (userID),
+     FOREIGN KEY (eventID)
+     REFERENCES Events (eventID),
+     PRIMARY KEY (userID, eventID)
+);
+
+CREATE TABLE Registration (
+  registrationID INT PRIMARY KEY AUTO_INCREMENT, -- also keeps track of capacity count
+  eventID VARCHAR(100) NOT NULL,
+  profileID VARCHAR(100) NOT NULL,
+  role ENUM ('Host', 'Admin', 'Volunteer', 'Attendee') NOT NULL,
+  registeredAt DateTime NOT NULL, -- prioritize capacity by this
+  FOREIGN KEY (profileID)
+     REFERENCES Profiles (profileID),
+     FOREIGN KEY (eventID)
+     REFERENCES Events (eventID)
+     
+);
+
+CREATE TABLE SavedEvents (
+   eventID VARCHAR(100) NOT NULL,
+  profileID VARCHAR(100) NOT NULL,
+  FOREIGN KEY (profileID)
+     REFERENCES Profiles (profileID),
+     FOREIGN KEY (eventID)
+     REFERENCES Events (eventID),
+     PRIMARY KEY (profileID, eventID)
+);
 
 /*
 
