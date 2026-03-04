@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { generateToken } from "../utils/generateToken.js";
-import connection from "../config/db.js";
-import nodemailer from "nodemailer"; // use nodemailer for sending emails
+import db from "../config/db.js";
+import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 
 const register = async (req, res) =>  {
@@ -14,8 +14,8 @@ const register = async (req, res) =>  {
     }
 
     // check if user already exists
-    const [existingUser] = await connection.execute('SELECT * FROM Users WHERE email = ?', [email]); // see if the email exists already
-    if (existingUser.length > 0) { // if it exists and isn't an empty array
+    const existingUser = db.prepare('SELECT * FROM Users WHERE email = ?').get(email);
+    if (existingUser) {
         return res.status(400).json({ message: "User already exists, try another email" });
     }
 
@@ -24,10 +24,9 @@ const register = async (req, res) =>  {
     const hashedPassword = await bcrypt.hash(passwords, salt);
 
     // insert user into database
-    await connection.execute(
-        'INSERT INTO Users (userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, state, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [userID, firstName, middleName, lastName, email, hashedPassword, phoneNumber, city, state, createdAt]
-    );
+    db.prepare(
+        'INSERT INTO Users (userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, state, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(userID, firstName, middleName, lastName, email, hashedPassword, phoneNumber, city, state, createdAt);
 
     // generate JWT token
     const token = generateToken(req.userID, res);
@@ -46,8 +45,7 @@ const register = async (req, res) =>  {
             state,
             token
         }
-    })
-
+    });
 };
 /*
 // post request
@@ -65,10 +63,10 @@ const register = async (req, res) =>  {
     "createdAt": "{{mysqlTime}}"
 }
 
-// pre-req script to get mySQL time:
+// pre-req script to get time:
 let now = new Date();
-let mysqlTime = now.toISOString().slice(0, 19).replace('T', ' ');
-pm.variables.set("mysqlTime", mysqlTime);
+let time = now.toISOString().slice(0, 19).replace('T', ' ');
+pm.variables.set("mysqlTime", time);
 */
 
 // login controller
@@ -82,18 +80,14 @@ const login = async (req, res) => {
         }
 
         // check if user email exists in the table
-        const [users] = await connection.execute('SELECT * FROM Users WHERE email = ?', [email]);
-        if (users.length === 0) {
+        const user = db.prepare('SELECT * FROM Users WHERE email = ?').get(email);
+        if (!user) {
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
-        // get the first user from the array
-        const user = users[0];
-
-        // verify password -> FIXIT: fixed, user was getting multiple users so it was getting confused so I had to get the first user
+        // verify password
         const validPassword = await bcrypt.compare(passwords, user.passwords);
-
-        if(!validPassword) {
+        if (!validPassword) {
             return res.status(401).json({ error: "Invalid email or password" });
         }
 
@@ -114,7 +108,7 @@ const login = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     };
 };
-// fromat in postman:
+// format in postman:
 /*
     "email": "joseph@gmail.com",
     "passwords": "Joseph123*"
@@ -124,7 +118,7 @@ const login = async (req, res) => {
 // logout controller
 const logout = (req, res) => {
     try {
-        res.cookie("jwt", "", { // error: es.cookie is not a function
+        res.cookie("jwt", "", {
             httpOnly: true,
             expires: new Date(0)
         });
@@ -133,60 +127,52 @@ const logout = (req, res) => {
         console.log(error.message);
         res.status(500).json({ error: "Error in logging out. Please try again." });
     };
-    
 };
 
-// forgot password so have to do request a password reset
+// forgot password - request a password reset
 /*
 Steps to do password reset:
     Create a route to request a password reset.
     Generate a password reset token.
-    Send the reset token to the user’s email.
+    Send the reset token to the user's email.
     Create a route to handle the password reset.
-    Update the user’s password in the database.
+    Update the user's password in the database.
 */
 
-// reset password controller
-// FIX-IT: 500 internal error TypeError: Cannot destructure property 'email' of 'req.body' as it is undefined.
 const requestPasswordReset = async (req, res) => {
-    const {email} = req.body; // get email from request
+    const {email} = req.body;
 
-    try{
+    try {
         // validate input
         if (!email) {
             return res.status(400).json({ error: "Please provide email" });
         }
 
-        // users will be an array of users
-        const [users] = await connection.execute('SELECT * FROM Users WHERE email = ?', [email]); // get the user with given email
-        if(users.length === 0) {
+        // get the user with given email
+        const user = db.prepare('SELECT * FROM Users WHERE email = ?').get(email);
+        if (!user) {
             return res.status(404).json({ error: "User with this email does not exist" });
         }
 
-        // get the first user from the array
-        const user = users[0];
-
         // generate a reset token
-        const secret = process.env.JWT_SECRET + user.passwords; // use password as part of secret to invalidate old tokens
+        const secret = process.env.JWT_SECRET + user.passwords;
         const payload = {
             id: user.userID,
             email: user.email
         };
-        const token = jwt.sign(payload, secret, { expiresIn: '1h' }); // token valid for 1 hour
+        const token = jwt.sign(payload, secret, { expiresIn: '1h' });
 
         const resetURL = `https://localhost:8000/auth/reset-password/${user.userID}/${token}`;
 
-        // send email to user with reset link
-        // using nodemailer to send email
+        // send email to user with reset link using nodemailer
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
-                user: process.env.EMAIL_USER, // email 
-                pass: process.env.EMAIL_PASS // password
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
             }
         });
 
-        // mail options
         const mailOptions = {
             to: user.email,
             from: process.env.EMAIL_USER,
@@ -197,9 +183,9 @@ const requestPasswordReset = async (req, res) => {
                   'If you did not request this, please ignore this email and your password will remain unchanged.\n'
         };
 
-        await transporter.sendMail(mailOptions); // send the email
+        await transporter.sendMail(mailOptions);
 
-        res.status(200).json({ message: "Password reset email sent.", resetURL}); // test the reset url
+        res.status(200).json({ message: "Password reset email sent.", resetURL });
         
     } catch (error) {
         console.log(error);
@@ -207,54 +193,45 @@ const requestPasswordReset = async (req, res) => {
     };
 };
 
-// reset password controller
-// not sure how to set this up in postman
-// what should the body and params be?
 const resetPassword = async (req, res, next) => {
-    const {userID, token} = req.params; // get id, token from params
-    const {passwords} = req.body; // get new password from body
+    const {userID, token} = req.params;
+    const {passwords} = req.body;
 
     try {
-        const [users] = await connection.execute('SELECT * FROM Users WHERE userID = ?', [userID]); // get the user with given id
+        const user = db.prepare('SELECT * FROM Users WHERE userID = ?').get(userID);
         
-        console.log("Users found:", users.length); // Debug line
+        console.log("User found:", !!user); // Debug line
 
-        if(users.length === 0) {
+        if (!user) {
             return res.status(404).json({ error: "User does not exist." });
         }
-
-        
-        const user = users[0]; // get the first user from the array
 
         // secret to verify token
         const secret = process.env.JWT_SECRET + user.passwords;
 
         // verify token
         const verify = jwt.verify(token, secret);
-        const hashedPassword = await bcrypt.hash(passwords, 10); // hash new password
+        const hashedPassword = await bcrypt.hash(passwords, 10);
 
         // update password in database
-        await connection.execute('UPDATE Users SET passwords = ? WHERE userID = ?', [hashedPassword, userID]);
+        db.prepare('UPDATE Users SET passwords = ? WHERE userID = ?').run(hashedPassword, userID);
 
         res.status(200).json({ message: "Password has been reset successfully." });
-    }  catch (error) {
+    } catch (error) {
         console.log(error);
         res.status(500).json({ error: "Error in resetting password. Please try again." });
     };
 };
 
 const checkEmail = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const [users] = await connection.execute('SELECT * FROM Users WHERE email = ?', [email]);
-    res.json({ exists: users.length > 0 });
-  } catch (error) {
-    console.error('Error checking email:', error);
-    res.status(500).json({ error: 'Server error' });
-  }
+    try {
+        const { email } = req.body;
+        const user = db.prepare('SELECT * FROM Users WHERE email = ?').get(email);
+        res.json({ exists: !!user });
+    } catch (error) {
+        console.error('Error checking email:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 };
 
-
-
-export { register, login, logout, requestPasswordReset, resetPassword, checkEmail}; // exprort all controllers
-// update them to route
+export { register, login, logout, requestPasswordReset, resetPassword, checkEmail };

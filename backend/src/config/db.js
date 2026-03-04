@@ -1,60 +1,27 @@
-// switch to mySQL
-import mySQL from 'mysql2';
-import dotenv from 'dotenv';
+// switch to SQLite
+import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const connection = mySQL.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password:'115227',
-    database: 'ConnectCord'
-});
-
-connection.connect((err) => {
-    // test out connection
+const db = new Database(path.join(__dirname, 'ConnectCord.db'), (err) => {
     if (err) {
-        console.error('Error connecting to MySQL database:', err);
+        console.error('Error connecting to SQLite database:', err);
         throw err;
     }
-    console.log('Connected to MySQL database');
-
-    // test out query
-    connection.query("USE ConnectCord", function (err, result) { 
-        if (err) throw err;
-        console.log("Database changed to ConnectCord");
-
-        connection.query('SELECT * FROM Users;', (err, results) => {
-            if (err) {
-                console.error('Error querying to MySQL database:', err);
-                throw err;
-            }
-            // console.log(results);
-        });
-    });
-    
-
-    /* dont' close this connection
-    // end connection after
-    connection.end((err) => {
-        if (err) {
-            console.error('Error closing MySQL database:', err);
-            throw err;
-        }
-        console.log("Connection closed:)");
-    });
-    */
-
 });
 
+console.log('Connected to SQLite database');
 
+// test out query
+try {
+    const rows = db.prepare('SELECT * FROM Users').all();
+    // console.log(rows);
+} catch (err) {
+    console.error('Error querying SQLite database:', err);
+    throw err;
+}
 
-
-export default connection.promise();
-
-
-
-
-// export { prisma, connectDB, disconnectDB };
-// export everything, should be in server.js
-
+export default db;

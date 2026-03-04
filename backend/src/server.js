@@ -1,49 +1,34 @@
-// import dotenv to use here, speciffaclly config
-import { config } from "dotenv"; 
+import { config } from "dotenv";
 config();
 
-import cors from "cors"; // import cors to handle cross-origin requests
-import express from "express"; // import express
-import connection from "./config/db.js";  // have one for connecting and disconnecting from database
-import locationRoutes from "./routes/locationRoutes.js"; 
-import mysql from 'mysql2'
+import cors from "cors";
+import express from "express";
+import db from "./config/db.js";
+import locationRoutes from "./routes/locationRoutes.js";
 
 // Import Routes
-import authRoutes from "./routes/authRoutes.js"; // import routes for authorization
-import profileRoutes from "./routes/profileRoutes.js"; // import routes for profile management
+import authRoutes from "./routes/authRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 
-// connect to database
-//config();
-//connection; // connect to database
-
-const app = express(); // create a variable to put express in it as a middleware
+const app = express();
 const PORT = process.env.PORT || 3000;
-
-
 
 // Middlewares
 app.use(cors({
     origin: ['*', 'exp://localhost:8081'],
     credentials: true
-})); // use cors as a middleware
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 // API Routes
-app.use("/auth", authRoutes); // authorization routes
-app.use("/api/location", locationRoutes); 
-app.use("/api/profile", profileRoutes); // profile management routes
-
-
-// Listen on port
-//const server = app.listen(process.env.PORT, "0.0.0.0", () => {
-// console.log(`Server running on PORT ${process.env.PORT}`);
-//});
+app.use("/auth", authRoutes);
+app.use("/api/location", locationRoutes);
+app.use("/api/profile", profileRoutes);
 
 
 // ─── POST /checkin ───
-app.post("/checkin", async (req, res) => {
+app.post("/checkin", (req, res) => {
   const { eventId, userId, timestamp } = req.body;
 
   if (!eventId || !userId) {
@@ -51,28 +36,25 @@ app.post("/checkin", async (req, res) => {
   }
 
   try {
-    const [existing] = await db.query(
-      "SELECT id FROM attendance WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL",
-      [eventId, userId]
-    );
+    const existing = db.prepare(
+      "SELECT id FROM attendance WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL"
+    ).get(eventId, userId);
 
-    if (existing.length > 0) {
+    if (existing) {
       return res.status(409).json({ error: "Already checked in to this event" });
     }
 
-    // ─── Fix: Convert to MySQL-compatible format ───
-    const checkInTime = toMySQLDateTime(timestamp || new Date().toISOString());
+    const checkInTime = toSQLiteDateTime(timestamp || new Date().toISOString());
 
-    const [result] = await db.query(
-      "INSERT INTO attendance (eventId, userId, checkInTime) VALUES (?, ?, ?)",
-      [eventId, userId, checkInTime]
-    );
+    const result = db.prepare(
+      "INSERT INTO attendance (eventId, userId, checkInTime) VALUES (?, ?, ?)"
+    ).run(eventId, userId, checkInTime);
 
     console.log(`[CHECK-IN] User ${userId} → Event ${eventId} at ${checkInTime}`);
 
     res.status(201).json({
       message: "Checked in successfully",
-      attendanceId: result.insertId,
+      attendanceId: result.lastInsertRowid,
       eventId,
       userId,
       checkInTime,
@@ -84,7 +66,7 @@ app.post("/checkin", async (req, res) => {
 });
 
 // ─── POST /checkout ───
-app.post("/checkout", async (req, res) => {
+app.post("/checkout", (req, res) => {
   const { eventId, userId, timestamp } = req.body;
 
   if (!eventId || !userId) {
@@ -92,15 +74,13 @@ app.post("/checkout", async (req, res) => {
   }
 
   try {
-    // ─── Fix: Convert to MySQL-compatible format ───
-    const checkOutTime = toMySQLDateTime(timestamp || new Date().toISOString());
+    const checkOutTime = toSQLiteDateTime(timestamp || new Date().toISOString());
 
-    const [result] = await db.query(
-      "UPDATE attendance SET checkOutTime = ? WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL",
-      [checkOutTime, eventId, userId]
-    );
+    const result = db.prepare(
+      "UPDATE attendance SET checkOutTime = ? WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL"
+    ).run(checkOutTime, eventId, userId);
 
-    if (result.affectedRows === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: "No active check-in found for this event" });
     }
 
@@ -118,13 +98,12 @@ app.post("/checkout", async (req, res) => {
   }
 });
 
-// ─── GET /attendance/:eventId (bonus: view attendance) ───
-app.get("/attendance/:eventId", async (req, res) => {
+// ─── GET /attendance/:eventId ───
+app.get("/attendance/:eventId", (req, res) => {
   try {
-    const [rows] = await db.query(
-      "SELECT * FROM attendance WHERE eventId = ? ORDER BY checkInTime DESC",
-      [req.params.eventId]
-    );
+    const rows = db.prepare(
+      "SELECT * FROM attendance WHERE eventId = ? ORDER BY checkInTime DESC"
+    ).all(req.params.eventId);
 
     res.json({ eventId: req.params.eventId, records: rows });
   } catch (err) {
@@ -133,50 +112,38 @@ app.get("/attendance/:eventId", async (req, res) => {
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 ConnectCord Backend running on port ${PORT}`);
 });
 
-// ─── Helper: Convert ISO timestamp to MySQL DATETIME format ───
-const toMySQLDateTime = (isoString) => {
+// ─── Helper: Normalize ISO timestamp to SQLite DATETIME format ───
+const toSQLiteDateTime = (isoString) => {
   const dt = new Date(isoString);
   return dt.toISOString().slice(0, 19).replace("T", " ");
   // "2026-02-19T00:08:05.967Z" → "2026-02-19 00:08:05"
 };
 
 
+// ─── Error Handling ───
 
-
-
-
-// Error Handling
-
-// Handle unhandled promise rejections (e.g., database connection errors)
 process.on("unhandledRejection", (err) => {
     console.error("Unhandled Rejection:", err);
-    server.close(async () => {
-        await connection.end();
+    server.close(() => {
+        db.close();
         process.exit(1);
     });
 });
 
-// Handle uncaught exceptions
-process.on("uncaughtException", async (err) => {
+process.on("uncaughtException", (err) => {
     console.error("Uncaught Exception:", err);
-    await connection.end();
+    db.close();
     process.exit(1);
 });
 
-// Graceful shutdown
-process.on("SIGTERM", async () => {
+process.on("SIGTERM", () => {
     console.log("SIGTERM received, shutting down gracefully");
-    server.close(async () => {
-        await connection.end();
+    server.close(() => {
+        db.close();
         process.exit(0);
     });
 });
-
-
-
-// was there a change?
-  
