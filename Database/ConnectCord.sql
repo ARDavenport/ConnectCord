@@ -12,9 +12,8 @@ CREATE TABLE Users (
     middleName VARCHAR(255), # optional
     lastName VARCHAR(255) NOT NULL,
     email VARCHAR(40) NOT NULL UNIQUE,
-    passwords VARCHAR(50) NOT NULL,
+    passwords VARCHAR(255) NOT NULL,
     phoneNumber VARCHAR(10) NOT NULL,
-    roles VARCHAR(100) NOT NULL, 
     city VARCHAR(100) NOT NULL,
     state VARCHAR(100) NOT NULL,
     createdAt datetime,
