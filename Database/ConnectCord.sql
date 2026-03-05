@@ -64,10 +64,11 @@ CREATE TABLE Experiences (
   profileID VARCHAR(100) NOT NULL,
   roleName VARCHAR(200) NOT NULL,
   companyName VARCHAR(200) NOT NULL,
+  roleType VARCHAR(100) NOT NULL, --full time, part time, etc.
   startDate DATE NOT NULL,
   endDate DATE, -- this can be marked as null and when it is null it will be taken as present
   city VARCHAR(500),
-  state VARCHAR(500),
+  roleState VARCHAR(500),
   description TEXT,
   FOREIGN KEY (profileID)
   REFERENCES Profiles (profileID)
