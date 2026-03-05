@@ -1,61 +1,3 @@
-/*
-CREATE TABLE Profiles (
-  profileID VARCHAR(100), -- connected to userid
-  fullName TEXT NOT NULL,
-  bio TEXT NOT NULL,
-  mail TEXT,
-  phone VARCHAR(50),
-  resumeURL VARCHAR(500),
-  linkedinURL VARCHAR(200),
-  githubURL VARCHAR(200),
-  portfolioURL VARCHAR(200),
-  skills TEXT,
-  FOREIGN KEY (profileID)
-  REFERENCES Users (userID)
-);
-
-CREATE TABLE Experiences (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  profileID VARCHAR(100) NOT NULL,
-  roleName VARCHAR(200) NOT NULL,
-  companyName VARCHAR(200) NOT NULL,
-  startDate DATE NOT NULL,
-  endDate DATE,
-  city VARCHAR(500),
-  state VARCHAR(500),
-  description TEXT,
-  FOREIGN KEY (profileID)
-  REFERENCES Profiles (profileID)
-);
-
-CREATE TABLE Educations (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  profileID VARCHAR(100) NOT NULL,
-  schoolName VARCHAR(500) NOT NULL,
-  degree VARCHAR(500) NOT NULL,
-  fieldOfStudy VARCHAR(500) NOT NULL,
-  startDate DATE NOT NULL,
-  endDate DATE,
-  gpa FLOAT,
-  description TEXT,
-  FOREIGN KEY (profileID)
-  REFERENCES Profiles (profileID)
-);
-
-CREATE TABLE Certifications (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  profileID VARCHAR(100) NOT NULL,
-  certificationName VARCHAR(500) NOT NULL,
-  organization VARCHAR(500) NOT NULL,
-  startDate DATE NOT NULL,
-  endDate DATE,
-  credentialID VARCHAR(500) NOT NULL,
-  credentialURL VARCHAR(500) NOT NULL,
-  FOREIGN KEY (profileID)
-  REFERENCES Profiles (profileID)
-);
-*/
-
 import db from "../config/db.js";
 
 const normalize = (input) => {
@@ -66,25 +8,51 @@ const normalize = (input) => {
     }
 };
 
-const createProfile = async (req, res) => {
+const getUserProfile = async (req, res) => {
     try {
-        const { profileID, fullName, bio, mail, phone, resumeURL, linkedinURL, githubURL, portfolioURL, skills } = req.body;
+        const {userID} = req.params;
 
         // check if user exists for the ID
-        const existingUser = db.prepare('SELECT * FROM Users WHERE userID = ?').get(profileID);
-        if (!existingUser) {
-            return res.status(400).json({ message: "User does not exist" });
+        const [userRows] = await connection.execute(
+                        "SELECT * FROM Users WHERE userID = ?",
+                        [userID]
+                    );
+        if (userRows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // get user info for th eprofile
+        const [results] = await connection.execute(" INSERT INTO Profiles (email, firstName, lastName, mail, phone, city, profileState) SELECT email, firstName, lastName, email, phoneNumber, city, userState FROM Users WHERE userID = ?", [userID]);
+    
+        res.status(200).json({
+            status: "Profile retrieved successfully"
+        });
+
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+const createProfile = async (req, res) => {
+    try {
+        const { profileID, bio, resumeURL, linkedinURL, githubURL, portfolioURL, skills } = req.body;
+
+        // check if user exists for the ID
+        const [userRows] = await connection.execute(
+                        "SELECT * FROM Users WHERE userID = ?"
+                       
+                    );
+        if (userRows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
         }
 
         // insert profile into database
         db.prepare(
-            'INSERT INTO Profiles (profileID, fullName, bio, mail, phone, resumeURL, linkedinURL, githubURL, portfolioURL, skills) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO Profiles (profileID, bio, resumeURL, linkedinURL, githubURL, portfolioURL, skills) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ).run(
             profileID,
-            fullName,
             normalize(bio),
-            mail,
-            phone,
             normalize(resumeURL),
             normalize(linkedinURL),
             normalize(githubURL),
@@ -94,130 +62,7 @@ const createProfile = async (req, res) => {
 
         res.status(201).json({
             status: "Profile created successfully",
-            data: { profileID, fullName, bio, mail, phone, linkedinURL, githubURL, portfolioURL, skills }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const addExperience = async (req, res) => {
-    try {
-        const { profileID, roleName, companyName, startDate, endDate, city, state, description } = req.body;
-
-        // check if profile exists
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare(
-            'INSERT INTO Experiences (profileID, roleName, companyName, startDate, endDate, city, state, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        ).run(
-            profileID,
-            roleName,
-            companyName,
-            startDate,
-            normalize(endDate),
-            normalize(city),
-            normalize(state),
-            normalize(description)
-        );
-
-        res.status(200).json({
-            status: "Experience added successfully",
-            data: { roleName, companyName, startDate, endDate, city, state, description }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const addEducation = async (req, res) => {
-    try {
-        const { profileID, schoolName, degree, fieldOfStudy, startDate, endDate, gpa, description } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare(
-            'INSERT INTO Educations (profileID, schoolName, degree, fieldOfStudy, startDate, endDate, gpa, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-        ).run(
-            profileID,
-            schoolName,
-            degree,
-            fieldOfStudy,
-            startDate,
-            normalize(endDate),
-            normalize(gpa),
-            normalize(description)
-        );
-
-        res.status(200).json({
-            status: "Education added successfully",
-            data: { profileID, schoolName, degree, fieldOfStudy, startDate, endDate, gpa, description }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const addCertification = async (req, res) => {
-    try {
-        const { profileID, certificationName, organization, startDate, endDate, credentialID, credentialURL } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare(
-            'INSERT INTO Certifications (profileID, certificationName, organization, startDate, endDate, credentialID, credentialURL) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        ).run(
-            profileID,
-            certificationName,
-            organization,
-            startDate,
-            normalize(endDate),
-            credentialID,
-            credentialURL
-        );
-
-        res.status(200).json({
-            status: "Certification added successfully",
-            data: { certificationName, organization, startDate, endDate, credentialID, credentialURL }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const getFullProfile = async (req, res) => {
-    try {
-        const { profileID } = req.params;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        const experiences    = db.prepare('SELECT * FROM Experiences WHERE profileID = ?').all(profileID);
-        const educations     = db.prepare('SELECT * FROM Educations WHERE profileID = ?').all(profileID);
-        const certifications = db.prepare('SELECT * FROM Certifications WHERE profileID = ?').all(profileID);
-
-        res.status(200).json({
-            status: "Profile retrieved successfully",
-            data: { profile: existingProfile, experiences, educations, certifications }
+            data: { profileID, bio, linkedinURL, githubURL, portfolioURL, skills }
         });
 
     } catch(error) {
@@ -228,225 +73,107 @@ const getFullProfile = async (req, res) => {
 
 const editProfile = async (req, res) => {
     try {
-        const { profileID, fullName, bio, mail, phone, resumeURL, linkedinURL, githubURL, portfolioURL, skills } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
+        const { profileID, firstName, lastName, bio, mail, phone, city, profileState, resumeURL, linkedinURL, githubURL, portfolioURL, skills } = req.body;
+    
+        // check if profile exists for the ID
+        const [profileRows] = await connection.execute(
+                        "SELECT * FROM Profiles WHERE profileID = ?",
+                        [profileID]
+        );  
+        if (profileRows.length === 0) {
+            return res.status(404).json({ message: "Create Profile to edit it." });
         }
 
-        db.prepare(
-            'UPDATE Profiles SET fullName = ?, bio = ?, mail = ?, phone = ?, resumeURL = ?, linkedinURL = ?, githubURL = ?, portfolioURL = ?, skills = ? WHERE profileID = ?'
-        ).run(
-            fullName,
-            normalize(bio),
-            mail,
-            phone,
-            normalize(resumeURL),
-            normalize(linkedinURL),
-            normalize(githubURL),
-            normalize(portfolioURL),
-            normalize(skills),
-            profileID
+        // update profile in database, they don't need to change everything
+        await connection.execute(
+            'UPDATE Profiles SET firstName = ?, lastName = ?, bio = ?, mail = ?, phone = ?, city = ?, profileState = ?, resumeURL = ?, linkedinURL = ?, githubURL = ?, portfolioURL = ?, skills = ? WHERE profileID = ?',
+            [
+                normalize(firstName),
+                normalize(lastName),
+                normalize(bio),
+                normalize(mail),
+                normalize(phone),
+                normalize(city),
+                normalize(profileState),
+                normalize(resumeURL),
+                normalize(linkedinURL),
+                normalize(githubURL),
+                normalize(portfolioURL),
+                normalize(skills),
+                profileID
+            ]
         );
 
+        // result
         res.status(201).json({
             status: "Profile edited successfully",
-            data: { profileID, fullName, bio, mail, phone, linkedinURL, githubURL, portfolioURL, skills }
+            data: { profileID, firstName, lastName, bio, mail, phone, city, profileState, resumeURL, linkedinURL, githubURL, portfolioURL, skills }
         });
 
-    } catch(error) {
+
+    } catch (error) {
         console.log(error.message);
         res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const editExperience = async (req, res) => {
-    try {
-        const { profileID, roleName, companyName, startDate, endDate, city, state, description } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare(
-            'UPDATE Experiences SET roleName = ?, companyName = ?, startDate = ?, endDate = ?, city = ?, state = ?, description = ? WHERE profileID = ?'
-        ).run(
-            roleName,
-            companyName,
-            startDate,
-            normalize(endDate),
-            normalize(city),
-            normalize(state),
-            normalize(description),
-            profileID
-        );
-
-        res.status(201).json({
-            status: "Experience edited successfully",
-            data: { roleName, companyName, startDate, endDate, city, state, description }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const editEducation = async (req, res) => {
-    try {
-        const { profileID, schoolName, degree, fieldOfStudy, startDate, endDate, gpa, description } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare(
-            'UPDATE Educations SET schoolName = ?, degree = ?, fieldOfStudy = ?, startDate = ?, endDate = ?, gpa = ?, description = ? WHERE profileID = ?'
-        ).run(
-            schoolName,
-            degree,
-            fieldOfStudy,
-            startDate,
-            normalize(endDate),
-            normalize(gpa),
-            normalize(description),
-            profileID
-        );
-
-        res.status(200).json({
-            status: "Education edited successfully",
-            data: { profileID, schoolName, degree, fieldOfStudy, startDate, endDate, gpa, description }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const editCertification = async (req, res) => {
-    try {
-        const { profileID, certificationName, organization, startDate, endDate, credentialID, credentialURL } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare(
-            'UPDATE Certifications SET certificationName = ?, organization = ?, startDate = ?, endDate = ?, credentialID = ?, credentialURL = ? WHERE profileID = ?'
-        ).run(
-            certificationName,
-            organization,
-            startDate,
-            normalize(endDate),
-            credentialID,
-            credentialURL,
-            profileID
-        );
-
-        res.status(200).json({
-            status: "Certification edited successfully",
-            data: { certificationName, organization, startDate, endDate, credentialID, credentialURL }
-        });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
+    };
 };
 
 const deleteProfile = async (req, res) => {
     try {
         const { profileID } = req.body;
 
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
+        // check if profile exists for the ID
+        const [profileRows] = await connection.execute(
+                        "SELECT * FROM Profiles WHERE profileID = ?",
+                        [profileID]
+        );
+
+        if (profileRows.length === 0) {
+            return res.status(404).json({ message: "Profile not found" });
         }
 
-        db.prepare('DELETE FROM Profiles WHERE profileID = ?').run(profileID);
+        // delete profile from database
+        await connection.execute(
+            'DELETE FROM Profiles WHERE profileID = ?',
+            [profileID]
+        );
 
-        res.status(200).json({ status: "Profile deleted successfully", data: { profileID } });
+        res.status(200).json({
+            status: "Profile deleted successfully"
+        });
 
-    } catch(error) {
+    } catch (error) {
         console.log(error.message);
         res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
+    };
 };
 
-const deleteExperience = async (req, res) => {
+const addExperience = async (req, res) => {
     try {
-        const { profileID } = req.body;
+        const { id, profileID, roleName, companyName, roleType, startDate, endDate, city, roleState, description } = req.body;
+        
+        // check if profile exists for the ID
+        const [profileRows] = await connection.execute(
+                        "SELECT * FROM Profiles WHERE profileID = ?",
+                        [profileID]
+        );
 
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
+        if (profileRows.length === 0) {
+            return res.status(404).json({ message: "Profile not found" });
         }
 
-        db.prepare('DELETE FROM Experiences WHERE profileID = ?').run(profileID);
 
-        res.status(200).json({ status: "Experience deleted successfully", data: { profileID } });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-const deleteEducation = async (req, res) => {
-    try {
-        const { profileID } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
+        // the id should be incremented by 1 for each experience added, so we need to get the last id and add 1 to it
+        const [experienceRows] = await connection.execute(
+                        "SELECT * FROM Experiences WHERE profileID = ? ORDER BY id DESC LIMIT 1",
+                        [profileID]
+        ); // if there are no experiences, the id should be 1
+        let newId = 1;
+        if (experienceRows.length > 0) {
+            newId = experienceRows[0].id + 1;
         }
 
-        db.prepare('DELETE FROM Educations WHERE profileID = ?').run(profileID);
+        
 
-        res.status(200).json({ status: "Education deleted successfully", data: { profileID } });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
+    } catch (error) {};
 };
 
-const deleteCertification = async (req, res) => {
-    try {
-        const { profileID } = req.body;
-
-        const existingProfile = db.prepare('SELECT * FROM Profiles WHERE profileID = ?').get(profileID);
-        if (!existingProfile) {
-            return res.status(400).json({ message: "Profile does not exist, create profile first" });
-        }
-
-        db.prepare('DELETE FROM Certifications WHERE profileID = ?').run(profileID);
-
-        res.status(200).json({ status: "Certification deleted successfully", data: { profileID } });
-
-    } catch(error) {
-        console.log(error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-};
-
-export {
-    createProfile,
-    addExperience,
-    addEducation,
-    addCertification,
-    getFullProfile,
-    editProfile,
-    editExperience,
-    editEducation,
-    editCertification,
-    deleteProfile,
-    deleteExperience,
-    deleteEducation,
-    deleteCertification
-};

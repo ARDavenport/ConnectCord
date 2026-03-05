@@ -1,149 +1,64 @@
-import { config } from "dotenv";
-config();
-
-import cors from "cors";
-import express from "express";
-import db from "./config/db.js";
-import locationRoutes from "./routes/locationRoutes.js";
+// import dotenv to use here, speciffaclly config
+import { config } from "dotenv"; 
+import cors from "cors"; // import cors to handle cross-origin requests
+import express from "express"; // import express
+import connection from "./config/db.js";  // have one for connecting and disconnecting from database
 
 // Import Routes
-import authRoutes from "./routes/authRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js";
+import authRoutes from "./routes/authRoutes.js"; // import routes for authorization
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// connect to database
+config();
+//connection; // connect to database
+
+const app = express(); // create a variable to put express in it as a middleware
 
 // Middlewares
-app.use(cors({
-    origin: ['*', 'exp://localhost:8081'],
-    credentials: true
-}));
+app.use(cors()); // use cors as a middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 // API Routes
-app.use("/auth", authRoutes);
-app.use("/api/location", locationRoutes);
-app.use("/api/profile", profileRoutes);
+app.use("/auth", authRoutes); // authorization routes
 
 
-// ─── POST /checkin ───
-app.post("/checkin", (req, res) => {
-  const { eventId, userId, timestamp } = req.body;
 
-  if (!eventId || !userId) {
-    return res.status(400).json({ error: "Missing required fields: eventId, userId" });
-  }
 
-  try {
-    const existing = db.prepare(
-      "SELECT id FROM attendance WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL"
-    ).get(eventId, userId);
-
-    if (existing) {
-      return res.status(409).json({ error: "Already checked in to this event" });
-    }
-
-    const checkInTime = toSQLiteDateTime(timestamp || new Date().toISOString());
-
-    const result = db.prepare(
-      "INSERT INTO attendance (eventId, userId, checkInTime) VALUES (?, ?, ?)"
-    ).run(eventId, userId, checkInTime);
-
-    console.log(`[CHECK-IN] User ${userId} → Event ${eventId} at ${checkInTime}`);
-
-    res.status(201).json({
-      message: "Checked in successfully",
-      attendanceId: result.lastInsertRowid,
-      eventId,
-      userId,
-      checkInTime,
-    });
-  } catch (err) {
-    console.error("[CHECK-IN ERROR]", err.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
+// Listen on port
+const server = app.listen(process.env.PORT, "0.0.0.0", () => {
+    console.log(`Server running on PORT ${process.env.PORT}`);
 });
 
-// ─── POST /checkout ───
-app.post("/checkout", (req, res) => {
-  const { eventId, userId, timestamp } = req.body;
 
-  if (!eventId || !userId) {
-    return res.status(400).json({ error: "Missing required fields: eventId, userId" });
-  }
+// Error Handling
 
-  try {
-    const checkOutTime = toSQLiteDateTime(timestamp || new Date().toISOString());
-
-    const result = db.prepare(
-      "UPDATE attendance SET checkOutTime = ? WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL"
-    ).run(checkOutTime, eventId, userId);
-
-    if (result.changes === 0) {
-      return res.status(404).json({ error: "No active check-in found for this event" });
-    }
-
-    console.log(`[CHECK-OUT] User ${userId} ← Event ${eventId} at ${checkOutTime}`);
-
-    res.status(200).json({
-      message: "Checked out successfully",
-      eventId,
-      userId,
-      checkOutTime,
-    });
-  } catch (err) {
-    console.error("[CHECK-OUT ERROR]", err.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// ─── GET /attendance/:eventId ───
-app.get("/attendance/:eventId", (req, res) => {
-  try {
-    const rows = db.prepare(
-      "SELECT * FROM attendance WHERE eventId = ? ORDER BY checkInTime DESC"
-    ).all(req.params.eventId);
-
-    res.json({ eventId: req.params.eventId, records: rows });
-  } catch (err) {
-    console.error("[ATTENDANCE QUERY ERROR]", err.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 ConnectCord Backend running on port ${PORT}`);
-});
-
-// ─── Helper: Normalize ISO timestamp to SQLite DATETIME format ───
-const toSQLiteDateTime = (isoString) => {
-  const dt = new Date(isoString);
-  return dt.toISOString().slice(0, 19).replace("T", " ");
-  // "2026-02-19T00:08:05.967Z" → "2026-02-19 00:08:05"
-};
-
-
-// ─── Error Handling ───
-
+// Handle unhandled promise rejections (e.g., database connection errors)
 process.on("unhandledRejection", (err) => {
     console.error("Unhandled Rejection:", err);
-    server.close(() => {
-        db.close();
+    server.close(async () => {
+        await connection.end();
         process.exit(1);
     });
 });
 
-process.on("uncaughtException", (err) => {
+// Handle uncaught exceptions
+process.on("uncaughtException", async (err) => {
     console.error("Uncaught Exception:", err);
-    db.close();
+    await connection.end();
     process.exit(1);
 });
 
-process.on("SIGTERM", () => {
+// Graceful shutdown
+process.on("SIGTERM", async () => {
     console.log("SIGTERM received, shutting down gracefully");
-    server.close(() => {
-        db.close();
+    server.close(async () => {
+        await connection.end();
         process.exit(0);
     });
 });
+
+
+
+// was there a change?
+  
