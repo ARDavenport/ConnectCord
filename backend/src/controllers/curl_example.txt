@@ -1,0 +1,10 @@
+curl -X POST http://localhost:8081/auth/register -H "Content-Type: application/json" -d '{
+    "userID": "{{$guid}}",
+    "firstName": "Bailee",
+    "middleName": null,
+    "lastName": "Chaveul",
+    "email": "leee@gmail.com",
+    "passwords": "Bailee123*",
+    "phoneNumber": "9832347823",
+    "city": "Cookeville",
+    "state": "Tennessee"}'
