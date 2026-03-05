@@ -15,7 +15,7 @@ CREATE TABLE Users (
     passwords VARCHAR(255) NOT NULL,
     phoneNumber VARCHAR(10) NOT NULL,
     city VARCHAR(100) NOT NULL,
-    state VARCHAR(100) NOT NULL,
+    userState VARCHAR(100) NOT NULL,
     createdAt datetime,
     PRIMARY KEY(userID)
 );
@@ -40,10 +40,13 @@ FLUSH privileges;
 
 CREATE TABLE Profiles (
   profileID VARCHAR(100), -- connected to userid
-  fullName TEXT NOT NULL,
+  firstName VARCHAR(100) NOT NULL,
+	lastName VARCHAR(100) NOT NULL,
   bio TEXT NOT NULL,
   mail TEXT,
   phone VARCHAR(50),
+	city VARCHAR(100),
+	profileState VARCHAR(100),
   resumeURL VARCHAR(500),
   linkedinURL VARCHAR(200),
   githubURL VARCHAR(200),
