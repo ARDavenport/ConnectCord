@@ -3,14 +3,41 @@ import { generateToken } from "../utils/generateToken.js";
 import connection from "../config/db.js";
 import nodemailer from "nodemailer"; // use nodemailer for sending emails
 import jwt from "jsonwebtoken";
+import {v4 as uuidv4} from "uuid"; // use uuid to generate unique user IDs
 
 const register = async (req, res) =>  {
     
-    const {userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, state, createdAt} = req.body;
+    const {firstName, middleName, lastName, email, passwords, phoneNumber, city, userState} = req.body;
+    const userID = uuidv4(); // generate a unique user ID
 
     // validate input
-    if (!firstName || !lastName || !email || !passwords || !phoneNumber || !city || !state || !createdAt) {
+    if (!firstName || !lastName || !email || !passwords || !phoneNumber || !city || !userState) {
+
+        if(!firstName) {
+            return res.status(400).json({ message: "Please provide first name" });
+        }
+        if(!lastName) {
+            return res.status(400).json({ message: "Please provide last name" });
+        }
+        if(!email) {
+            return res.status(400).json({ message: "Please provide email" });
+        }
+        if(!passwords) {
+            return res.status(400).json({ message: "Please provide password" });
+        }
+        if(!phoneNumber) {
+            return res.status(400).json({ message: "Please provide phone number" });
+        }
+        if(!city) {
+            return res.status(400).json({ message: "Please provide city" });
+        }
+        if(!userState) {
+            return res.status(400).json({ message: "Please provide state" });
+        }
+
         return res.status(400).json({ message: "Please provide all required fields" });
+
+
     }
 
     // check if user already exists
@@ -25,8 +52,8 @@ const register = async (req, res) =>  {
 
     // insert user into database
     await connection.execute(
-        'INSERT INTO Users (userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, state, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [userID, firstName, middleName, lastName, email, hashedPassword, phoneNumber, city, state, createdAt]
+        'INSERT INTO Users (userID, firstName, middleName, lastName, email, passwords, phoneNumber, city, userState) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [userID, firstName, middleName, lastName, email, hashedPassword, phoneNumber, city, userState]
     );
 
     // generate JWT token
@@ -43,7 +70,7 @@ const register = async (req, res) =>  {
             email,
             phoneNumber,
             city,
-            state,
+            userState,
             token
         }
     })
@@ -244,5 +271,7 @@ const resetPassword = async (req, res, next) => {
 };
 
 
-export { register, login, logout, requestPasswordReset, resetPassword}; // exprort all controllers
+
+
+export { register, login, logout, requestPasswordReset, resetPassword, getUserID}; // exprort all controllers
 // update them to route

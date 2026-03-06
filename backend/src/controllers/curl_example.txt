@@ -1,10 +1,21 @@
 curl -X POST http://localhost:8081/auth/register -H "Content-Type: application/json" -d '{
-    "userID": "{{$guid}}",
-    "firstName": "Bailee",
-    "middleName": null,
-    "lastName": "Chaveul",
-    "email": "leee@gmail.com",
-    "passwords": "Bailee123*",
-    "phoneNumber": "9832347823",
-    "city": "Cookeville",
-    "state": "Tennessee"}'
+  "firstName": "Bailee",
+  "middleName": null,
+  "lastName": "Chaveul",
+  "email": "bailee@gmail.com",
+  "passwords": "Bailee123*",
+  "phoneNumber": "9832347823",
+  "city": "Cookeville",
+  "userState": "Tennessee"
+}'
+
+curl -X POST http://localhost:8081/auth/login \
+-H "Content-Type: application/json" \
+-d '{
+  "email": "bailee@gmail.com",
+  "passwords": "Bailee123*"
+}'
+
+    mysql -u root -p < Database/ConnectCord.sql 
+Enter password: 
+Database

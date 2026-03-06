@@ -6,6 +6,7 @@ import connection from "./config/db.js";  // have one for connecting and disconn
 
 // Import Routes
 import authRoutes from "./routes/authRoutes.js"; // import routes for authorization
+import profileRoutes from "./routes/profileRoutes.js"; // import routes for profiles
 
 // connect to database
 config();
@@ -21,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use("/auth", authRoutes); // authorization routes
+app.use("/profile", profileRoutes); // profile routes
 
 
 
