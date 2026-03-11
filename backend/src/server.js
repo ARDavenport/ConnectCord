@@ -40,47 +40,6 @@ app.use("/api/location", locationRoutes);
 //});
 
 
-// ─── POST /checkin ───
-app.post("/checkin", async (req, res) => {
-  const { eventId, userId, timestamp } = req.body;
-
-  if (!eventId || !userId) {
-    return res.status(400).json({ error: "Missing required fields: eventId, userId" });
-  }
-
-  try {
-    const [existing] = await db.query(
-      "SELECT id FROM attendance WHERE eventId = ? AND userId = ? AND checkOutTime IS NULL",
-      [eventId, userId]
-    );
-
-    if (existing.length > 0) {
-      return res.status(409).json({ error: "Already checked in to this event" });
-    }
-
-    // ─── Fix: Convert to MySQL-compatible format ───
-    const checkInTime = toMySQLDateTime(timestamp || new Date().toISOString());
-
-    const [result] = await db.query(
-      "INSERT INTO attendance (eventId, userId, checkInTime) VALUES (?, ?, ?)",
-      [eventId, userId, checkInTime]
-    );
-
-    console.log(`[CHECK-IN] User ${userId} → Event ${eventId} at ${checkInTime}`);
-
-    res.status(201).json({
-      message: "Checked in successfully",
-      attendanceId: result.insertId,
-      eventId,
-      userId,
-      checkInTime,
-    });
-  } catch (err) {
-    console.error("[CHECK-IN ERROR]", err.message);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
 // ─── POST /checkout ───
 app.post("/checkout", async (req, res) => {
   const { eventId, userId, timestamp } = req.body;
@@ -141,40 +100,3 @@ const toMySQLDateTime = (isoString) => {
   return dt.toISOString().slice(0, 19).replace("T", " ");
   // "2026-02-19T00:08:05.967Z" → "2026-02-19 00:08:05"
 };
-
-
-
-
-
-
-// Error Handling
-
-// Handle unhandled promise rejections (e.g., database connection errors)
-process.on("unhandledRejection", (err) => {
-    console.error("Unhandled Rejection:", err);
-    server.close(async () => {
-        await connection.end();
-        process.exit(1);
-    });
-});
-
-// Handle uncaught exceptions
-process.on("uncaughtException", async (err) => {
-    console.error("Uncaught Exception:", err);
-    await connection.end();
-    process.exit(1);
-});
-
-// Graceful shutdown
-process.on("SIGTERM", async () => {
-    console.log("SIGTERM received, shutting down gracefully");
-    server.close(async () => {
-        await connection.end();
-        process.exit(0);
-    });
-});
-
-
-
-// was there a change?
-  

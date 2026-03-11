@@ -53,7 +53,7 @@ export default function signinPage() {
 
     console.log('Logged in user:', data.data);
 
-      router.replace('../(tabs)/dummy');
+      router.replace('../(tabs)/homePage');
     } catch (err) {
       console.error(err);
       setError('Network error. Check your server.');

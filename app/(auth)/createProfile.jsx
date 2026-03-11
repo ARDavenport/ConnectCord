@@ -146,7 +146,7 @@ const createProfile = () => {
       console.log('Registration successful:', data);
       
       // Navigate to home page on success
-      router.replace('../(tabs)/dummy');
+      router.replace('../(tabs)/homePage');
       
     } catch (err) {
       console.error('Network error:', err);

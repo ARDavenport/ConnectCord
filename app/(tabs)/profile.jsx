@@ -9,7 +9,6 @@ import { COLORS } from '../../constants/themes';
 import { useRouter } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker'
 import { WebView } from 'react-native-webview'
-import { API_BASE_URL } from '../../constants/api';
 
 
 const profile = () => {
@@ -166,10 +165,10 @@ const profile = () => {
             </TouchableOpacity>
           </View>
 
-                <Text style={styles.fullName}>FULL NAME</Text>
+                <Text style={styles.fullName}>Test One</Text>
 
 
-          <Text style={styles.location}>location</Text>
+          <Text style={styles.location}>Cookeville, TN</Text>
       
           
                       
@@ -251,11 +250,11 @@ const profile = () => {
             <View>
               <Text style={styles.infoText}>
                 <Ionicons name='mail' size={16} color="white" />
-                : {contactEmail || 'Not provided'}
+                : {contactEmail || '(000) 000-0000'}
               </Text>
               <Text style={styles.infoText}>
                 <Ionicons name='call' size={16} color="white" />
-                : {contactPhone || 'Not provided'}
+                : {contactPhone || 'testone@gmail.com'}
               </Text>
             </View>
                 
