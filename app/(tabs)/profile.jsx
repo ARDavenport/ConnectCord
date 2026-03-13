@@ -25,8 +25,7 @@ const profile = () => {
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [events, setEvents] = useState([
-    'Workshop',
-    'Career Fair',
+    
   ]);
   const [file, setFile] = useState(null);
   
@@ -165,7 +164,7 @@ const profile = () => {
             </TouchableOpacity>
           </View>
 
-                <Text style={styles.fullName}>Test One</Text>
+                <Text style={styles.fullName}>Kevin Damian</Text>
 
 
           <Text style={styles.location}>Cookeville, TN</Text>
@@ -250,11 +249,11 @@ const profile = () => {
             <View>
               <Text style={styles.infoText}>
                 <Ionicons name='mail' size={16} color="white" />
-                : {contactEmail || '(000) 000-0000'}
+                : {contactEmail || 'kevdamiang14@gmail.com'}
               </Text>
               <Text style={styles.infoText}>
                 <Ionicons name='call' size={16} color="white" />
-                : {contactPhone || 'testone@gmail.com'}
+                : {contactPhone || '(615) 926-1695'}
               </Text>
             </View>
                 

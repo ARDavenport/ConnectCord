@@ -1,5 +1,4 @@
-
-import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, Alert } from 'react-native'
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context'
 import { Ionicons } from "@expo/vector-icons"
 import { useRouter, useLocalSearchParams } from 'expo-router' 
@@ -11,6 +10,30 @@ import banner from '../assets/images/placeholder_image.avif'
 const eventInfo = () => {
 
   const router = useRouter()
+    
+    const [registered, setRegistered] = useState(false)
+  
+    const handleRegisterPress = () => {
+      if (!registered) {
+        setRegistered(true)
+      } else {
+        Alert.alert(
+          "Unregister",
+          "Are you sure you want to unregister from this event?",
+          [
+            {
+              text: "Yes",
+              onPress: () => setRegistered(false)
+              
+            },
+            {
+              text: "Cancel",
+              style: "cancel"
+            }
+          ]
+        )
+      }
+    }
   
   return (
     <SafeAreaProvider>
@@ -37,7 +60,7 @@ const eventInfo = () => {
 
             <View style={styles.infoRow}>
               <Ionicons name="location-sharp" size={18} color="white" />
-              <Text style={styles.infoText}>Cookeville, TN</Text>
+              <Text style={styles.infoText}>Online</Text>
             </View>
 
           </View>
@@ -52,12 +75,18 @@ const eventInfo = () => {
           </View>
 
 
-          <View style={styles.buttonContainer}>
-
-            <TouchableOpacity style={styles.registerButton}>
-              <Text style={styles.registerText}>Register For Event</Text>
+          <View style={styles.buttonContainer}>         
+            <TouchableOpacity
+              style={[
+                styles.registerButton,
+                registered && { backgroundColor: "#16A34A", borderColor: "#16A34A" } 
+              ]}
+              onPress={handleRegisterPress} 
+            >
+              <Text style={styles.registerText}>
+                {registered ? "✓ Registered" : "Register For Event"} 
+              </Text>
             </TouchableOpacity>
-
           </View>
 
         </ScrollView>
